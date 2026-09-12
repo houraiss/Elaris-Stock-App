@@ -44,6 +44,7 @@
     "weightGrams": "Weight (g)",
     "costMad": "Cost (MAD)",
     "priceMad": "Price (MAD)",
+    "quantity": "Quantity",
     "priceSuggested": "Suggested: {{price}}",
     "addVariant": "Add size",
     "removeVariant": "Remove",
@@ -58,5 +59,26 @@
     "photos": "Photos",
     "noPhotos": "No photos yet",
     "notFound": "Piece not found"
+  },
+  "stockIntake": {
+    "title": "Stock intake",
+    "fabLabel": "Scan / Intake",
+    "scan": "Scan",
+    "manual": "Manual",
+    "scanHint": "Point the camera at a barcode or QR tag",
+    "cameraPermission": "Camera access is needed to scan barcodes.",
+    "grantPermission": "Grant camera access",
+    "matched": "Matched",
+    "currentOnHand": "Current on hand",
+    "addStock": "Add stock",
+    "newBarcode": "New code: {{code}}",
+    "searchLabel": "Find a piece to restock",
+    "searchPlaceholder": "Search by name, SKU or barcode",
+    "createNew": "Create new piece",
+    "attachingToExisting": "Adding a new size to this piece",
+    "uniqueCannotAddVariant": "Unique pieces can only have one variant",
+    "savedTitle": "Saved",
+    "savedRestock": "Added {{count}} to {{name}} ({{label}})",
+    "savedNew": "Created {{name}} and recorded its opening stock"
   }
 }

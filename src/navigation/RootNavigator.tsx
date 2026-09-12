@@ -5,6 +5,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { StockScreen } from '../screens/StockScreen';
 import { PieceDetailScreen } from '../screens/PieceDetailScreen';
 import { AddPieceScreen } from '../screens/AddPieceScreen';
+import { StockIntakeScreen } from '../screens/StockIntakeScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -21,6 +22,11 @@ export function RootNavigator() {
           name="AddPiece"
           component={AddPieceScreen}
           options={{ title: t('piece.addTitle') }}
+        />
+        <Stack.Screen
+          name="StockIntake"
+          component={StockIntakeScreen}
+          options={{ title: t('stockIntake.title') }}
         />
       </Stack.Navigator>
     </NavigationContainer>

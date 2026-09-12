@@ -44,6 +44,7 @@
     "weightGrams": "Poids (g)",
     "costMad": "Coût (MAD)",
     "priceMad": "Prix (MAD)",
+    "quantity": "Quantité",
     "priceSuggested": "Suggéré : {{price}}",
     "addVariant": "Ajouter une taille",
     "removeVariant": "Retirer",
@@ -58,5 +59,26 @@
     "photos": "Photos",
     "noPhotos": "Aucune photo pour l'instant",
     "notFound": "Pièce introuvable"
+  },
+  "stockIntake": {
+    "title": "Entrée de stock",
+    "fabLabel": "Scanner / Entrée",
+    "scan": "Scanner",
+    "manual": "Manuel",
+    "scanHint": "Pointez la caméra vers un code-barres ou QR",
+    "cameraPermission": "L'accès à la caméra est nécessaire pour scanner les codes-barres.",
+    "grantPermission": "Autoriser la caméra",
+    "matched": "Correspondance trouvée",
+    "currentOnHand": "En stock actuellement",
+    "addStock": "Ajouter au stock",
+    "newBarcode": "Nouveau code : {{code}}",
+    "searchLabel": "Trouver une pièce à réapprovisionner",
+    "searchPlaceholder": "Rechercher par nom, SKU ou code-barres",
+    "createNew": "Créer une nouvelle pièce",
+    "attachingToExisting": "Ajout d'une nouvelle taille à cette pièce",
+    "uniqueCannotAddVariant": "Une pièce unique ne peut avoir qu'une seule variante",
+    "savedTitle": "Enregistré",
+    "savedRestock": "{{count}} ajouté(s) à {{name}} ({{label}})",
+    "savedNew": "{{name}} créé et son stock initial enregistré"
   }
 }

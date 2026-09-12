@@ -152,7 +152,7 @@ export function AddPieceScreen({ navigation }: Props) {
 
     setSaving(true);
     try {
-      const piece = await createPieceWithVariants({
+      const { piece } = await createPieceWithVariants({
         name: name.trim(),
         category: category.trim(),
         materialId,

@@ -44,6 +44,7 @@
     "weightGrams": "الوزن (غ)",
     "costMad": "التكلفة (درهم)",
     "priceMad": "السعر (درهم)",
+    "quantity": "الكمية",
     "priceSuggested": "السعر المقترح: {{price}}",
     "addVariant": "إضافة مقاس",
     "removeVariant": "إزالة",
@@ -58,5 +59,26 @@
     "photos": "الصور",
     "noPhotos": "لا توجد صور بعد",
     "notFound": "القطعة غير موجودة"
+  },
+  "stockIntake": {
+    "title": "إدخال المخزون",
+    "fabLabel": "مسح / إدخال",
+    "scan": "مسح",
+    "manual": "يدوي",
+    "scanHint": "وجّه الكاميرا نحو الباركود أو رمز QR",
+    "cameraPermission": "الوصول إلى الكاميرا مطلوب لمسح الباركود.",
+    "grantPermission": "السماح باستخدام الكاميرا",
+    "matched": "تمت المطابقة",
+    "currentOnHand": "المتوفر حاليًا",
+    "addStock": "إضافة إلى المخزون",
+    "newBarcode": "رمز جديد: {{code}}",
+    "searchLabel": "ابحث عن قطعة لإعادة التزويد",
+    "searchPlaceholder": "البحث بالاسم أو SKU أو الباركود",
+    "createNew": "إنشاء قطعة جديدة",
+    "attachingToExisting": "إضافة مقاس جديد لهذه القطعة",
+    "uniqueCannotAddVariant": "القطعة الفريدة يمكن أن تحتوي على نوع واحد فقط",
+    "savedTitle": "تم الحفظ",
+    "savedRestock": "تمت إضافة {{count}} إلى {{name}} ({{label}})",
+    "savedNew": "تم إنشاء {{name}} وتسجيل مخزونه الأولي"
   }
 }

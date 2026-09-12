@@ -103,6 +103,9 @@ export function StockScreen({ navigation }: Props) {
           </Pressable>
         )}
       />
+      <Pressable style={styles.fabSecondary} onPress={() => navigation.navigate('StockIntake')}>
+        <Text style={styles.fabSecondaryText}>{t('stockIntake.fabLabel')}</Text>
+      </Pressable>
       <Pressable style={styles.fab} onPress={() => navigation.navigate('AddPiece')}>
         <Text style={styles.fabText}>+</Text>
       </Pressable>
@@ -159,4 +162,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fabText: { color: '#fff', fontSize: 28, lineHeight: 30 },
+  fabSecondary: {
+    position: 'absolute',
+    end: 20,
+    bottom: 88,
+    paddingHorizontal: 18,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1a1a1a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabSecondaryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 });

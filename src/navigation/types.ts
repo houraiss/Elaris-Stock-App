@@ -3,4 +3,5 @@ export type RootStackParamList = {
   Stock: undefined;
   PieceDetail: { pieceId: string };
   AddPiece: undefined;
+  StockIntake: undefined;
 };

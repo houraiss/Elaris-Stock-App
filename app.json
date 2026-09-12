@@ -23,7 +23,13 @@
     },
     "plugins": [
       "expo-sqlite",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Elaris uses the camera to scan barcodes and photograph pieces."
+        }
+      ]
     ]
   }
 }

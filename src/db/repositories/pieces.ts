@@ -46,8 +46,13 @@ export interface PieceDetail extends Piece {
   photoUris: string[];
 }
 
+export interface CreatedPiece {
+  piece: Piece;
+  variants: Variant[];
+}
+
 /** A piece always has at least one variant; a unique piece has exactly one. */
-export async function createPieceWithVariants(input: NewPieceInput): Promise<Piece> {
+export async function createPieceWithVariants(input: NewPieceInput): Promise<CreatedPiece> {
   if (input.variants.length === 0) {
     throw new Error('A piece must have at least one variant');
   }
@@ -73,9 +78,11 @@ export async function createPieceWithVariants(input: NewPieceInput): Promise<Pie
       updatedAt: now,
     });
 
+    const createdVariants: Variant[] = [];
     for (const v of input.variants) {
+      const variantId = generateId();
       await tx.insert(variants).values({
-        id: generateId(),
+        id: variantId,
         pieceId,
         label: v.label,
         barcode: v.barcode ?? null,
@@ -86,10 +93,12 @@ export async function createPieceWithVariants(input: NewPieceInput): Promise<Pie
         createdAt: now,
         updatedAt: now,
       });
+      const [createdVariant] = await tx.select().from(variants).where(eq(variants.id, variantId));
+      createdVariants.push(createdVariant);
     }
 
     const [created] = await tx.select().from(pieces).where(eq(pieces.id, pieceId));
-    return created;
+    return { piece: created, variants: createdVariants };
   });
 }
 
