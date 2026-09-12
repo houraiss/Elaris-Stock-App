@@ -9,11 +9,15 @@
     "delete": "حذف",
     "camera": "الكاميرا",
     "gallery": "المعرض",
-    "all": "الكل"
+    "all": "الكل",
+    "yes": "نعم",
+    "no": "لا"
   },
   "home": {
     "title": "الرئيسية",
-    "goToStock": "الذهاب إلى المخزون"
+    "goToStock": "الذهاب إلى المخزون",
+    "logSale": "تسجيل عملية بيع",
+    "layaways": "الحجوزات بالتقسيط"
   },
   "stock": {
     "title": "المخزون",
@@ -80,5 +84,55 @@
     "savedTitle": "تم الحفظ",
     "savedRestock": "تمت إضافة {{count}} إلى {{name}} ({{label}})",
     "savedNew": "تم إنشاء {{name}} وتسجيل مخزونه الأولي"
+  },
+  "sale": {
+    "title": "تسجيل عملية بيع",
+    "scan": "مسح",
+    "search": "بحث",
+    "searchPlaceholder": "البحث باسم القطعة",
+    "cart": "السلة",
+    "cartEmpty": "لم تتم إضافة شيء بعد — امسح أو ابحث عن قطعة.",
+    "emptyCart": "أضف عنصرًا واحدًا على الأقل أولاً",
+    "outOfStock": "هذا النوع غير متوفر حاليًا",
+    "noMatch": "لا توجد قطعة مطابقة لهذا الرمز",
+    "channel": "القناة",
+    "channel_shop": "المتجر",
+    "channel_market": "السوق",
+    "channel_whatsapp": "واتساب",
+    "channel_instagram": "إنستغرام",
+    "channel_tiktok": "تيك توك",
+    "discountMad": "الخصم (درهم)",
+    "discount": "الخصم",
+    "subtotal": "المجموع الفرعي",
+    "total": "الإجمالي",
+    "customer": "الزبون (اختياري)",
+    "customerPlaceholder": "ابحث أو اكتب اسمًا جديدًا",
+    "layawayToggle": "حجز بالتقسيط",
+    "depositMad": "الدفعة المقدمة (درهم)",
+    "dueOn": "تاريخ الاستحقاق (اختياري)",
+    "depositMethod": "طريقة الدفعة المقدمة",
+    "method": "طريقة الدفع",
+    "method_cash": "نقدًا",
+    "method_card": "بطاقة",
+    "method_transfer": "تحويل",
+    "layawayNeedsCustomer": "الحجز بالتقسيط يتطلب اسم الزبون",
+    "invalidDeposit": "يجب أن تكون الدفعة المقدمة أكبر من 0 ولا تتجاوز الإجمالي",
+    "completeSale": "إتمام البيع",
+    "savedTitle": "تم تسجيل البيع",
+    "savedImmediate": "تم إتمام البيع بمبلغ {{total}}",
+    "savedLayaway": "تم فتح حجز بالتقسيط بإجمالي {{total}}، وتسجيل دفعة مقدمة {{deposit}}",
+    "saveError": "تعذر تسجيل هذا البيع"
+  },
+  "layaways": {
+    "title": "الحجوزات بالتقسيط",
+    "empty": "لا توجد حجوزات مفتوحة حاليًا.",
+    "total": "الإجمالي",
+    "outstanding": "المتبقي",
+    "due": "الاستحقاق",
+    "recordPayment": "تسجيل دفعة",
+    "invalidAmount": "يجب أن يكون المبلغ أكبر من 0 ولا يتجاوز المبلغ المتبقي",
+    "savedTitle": "تم تسجيل الدفعة",
+    "handedOver": "تم الدفع بالكامل — تم تسليم قطعة {{name}} الآن",
+    "paymentRecorded": "تم تسجيل الدفعة"
   }
 }

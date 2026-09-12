@@ -9,11 +9,15 @@
     "delete": "Delete",
     "camera": "Camera",
     "gallery": "Gallery",
-    "all": "All"
+    "all": "All",
+    "yes": "Yes",
+    "no": "No"
   },
   "home": {
     "title": "Home",
-    "goToStock": "Go to Stock"
+    "goToStock": "Go to Stock",
+    "logSale": "Log a sale",
+    "layaways": "Layaways"
   },
   "stock": {
     "title": "Stock",
@@ -80,5 +84,55 @@
     "savedTitle": "Saved",
     "savedRestock": "Added {{count}} to {{name}} ({{label}})",
     "savedNew": "Created {{name}} and recorded its opening stock"
+  },
+  "sale": {
+    "title": "Log sale",
+    "scan": "Scan",
+    "search": "Search",
+    "searchPlaceholder": "Search by piece name",
+    "cart": "Cart",
+    "cartEmpty": "Nothing added yet — scan or search for a piece.",
+    "emptyCart": "Add at least one item first",
+    "outOfStock": "That variant is out of stock",
+    "noMatch": "No piece matches that code",
+    "channel": "Channel",
+    "channel_shop": "Shop",
+    "channel_market": "Market",
+    "channel_whatsapp": "WhatsApp",
+    "channel_instagram": "Instagram",
+    "channel_tiktok": "TikTok",
+    "discountMad": "Discount (MAD)",
+    "discount": "Discount",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "customer": "Customer (optional)",
+    "customerPlaceholder": "Search or type a new name",
+    "layawayToggle": "Layaway (instalments)",
+    "depositMad": "Deposit (MAD)",
+    "dueOn": "Due date (optional)",
+    "depositMethod": "Deposit method",
+    "method": "Payment method",
+    "method_cash": "Cash",
+    "method_card": "Card",
+    "method_transfer": "Transfer",
+    "layawayNeedsCustomer": "A layaway needs a customer name",
+    "invalidDeposit": "Deposit must be greater than 0 and no more than the total",
+    "completeSale": "Complete sale",
+    "savedTitle": "Sale recorded",
+    "savedImmediate": "Sale completed for {{total}}",
+    "savedLayaway": "Layaway opened for {{total}}, deposit {{deposit}} recorded",
+    "saveError": "Could not record this sale"
+  },
+  "layaways": {
+    "title": "Layaways",
+    "empty": "No open layaways.",
+    "total": "Total",
+    "outstanding": "Outstanding",
+    "due": "Due",
+    "recordPayment": "Record payment",
+    "invalidAmount": "Amount must be greater than 0 and no more than the outstanding balance",
+    "savedTitle": "Payment recorded",
+    "handedOver": "Paid in full — {{name}}'s piece is now handed over",
+    "paymentRecorded": "Payment recorded"
   }
 }

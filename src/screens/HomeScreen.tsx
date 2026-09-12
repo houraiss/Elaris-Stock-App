@@ -10,8 +10,14 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{t('common.appName')}</Text>
+      <Pressable style={styles.button} onPress={() => navigation.navigate('LogSale')}>
+        <Text style={styles.buttonText}>{t('home.logSale')}</Text>
+      </Pressable>
       <Pressable style={styles.button} onPress={() => navigation.navigate('Stock')}>
         <Text style={styles.buttonText}>{t('home.goToStock')}</Text>
+      </Pressable>
+      <Pressable style={styles.button} onPress={() => navigation.navigate('Layaways')}>
+        <Text style={styles.buttonText}>{t('home.layaways')}</Text>
       </Pressable>
     </View>
   );

@@ -6,6 +6,8 @@ import { StockScreen } from '../screens/StockScreen';
 import { PieceDetailScreen } from '../screens/PieceDetailScreen';
 import { AddPieceScreen } from '../screens/AddPieceScreen';
 import { StockIntakeScreen } from '../screens/StockIntakeScreen';
+import { LogSaleScreen } from '../screens/LogSaleScreen';
+import { LayawaysScreen } from '../screens/LayawaysScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,6 +30,8 @@ export function RootNavigator() {
           component={StockIntakeScreen}
           options={{ title: t('stockIntake.title') }}
         />
+        <Stack.Screen name="LogSale" component={LogSaleScreen} options={{ title: t('sale.title') }} />
+        <Stack.Screen name="Layaways" component={LayawaysScreen} options={{ title: t('layaways.title') }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -9,11 +9,15 @@
     "delete": "Supprimer",
     "camera": "Appareil photo",
     "gallery": "Galerie",
-    "all": "Tous"
+    "all": "Tous",
+    "yes": "Oui",
+    "no": "Non"
   },
   "home": {
     "title": "Accueil",
-    "goToStock": "Voir le stock"
+    "goToStock": "Voir le stock",
+    "logSale": "Enregistrer une vente",
+    "layaways": "Réservations"
   },
   "stock": {
     "title": "Stock",
@@ -80,5 +84,55 @@
     "savedTitle": "Enregistré",
     "savedRestock": "{{count}} ajouté(s) à {{name}} ({{label}})",
     "savedNew": "{{name}} créé et son stock initial enregistré"
+  },
+  "sale": {
+    "title": "Enregistrer une vente",
+    "scan": "Scanner",
+    "search": "Rechercher",
+    "searchPlaceholder": "Rechercher par nom de la pièce",
+    "cart": "Panier",
+    "cartEmpty": "Rien ajouté pour l'instant — scannez ou recherchez une pièce.",
+    "emptyCart": "Ajoutez au moins un article d'abord",
+    "outOfStock": "Cette variante est en rupture de stock",
+    "noMatch": "Aucune pièce ne correspond à ce code",
+    "channel": "Canal",
+    "channel_shop": "Boutique",
+    "channel_market": "Marché",
+    "channel_whatsapp": "WhatsApp",
+    "channel_instagram": "Instagram",
+    "channel_tiktok": "TikTok",
+    "discountMad": "Remise (MAD)",
+    "discount": "Remise",
+    "subtotal": "Sous-total",
+    "total": "Total",
+    "customer": "Client (facultatif)",
+    "customerPlaceholder": "Rechercher ou saisir un nouveau nom",
+    "layawayToggle": "Réservation (paiement échelonné)",
+    "depositMad": "Acompte (MAD)",
+    "dueOn": "Date d'échéance (facultatif)",
+    "depositMethod": "Méthode de l'acompte",
+    "method": "Méthode de paiement",
+    "method_cash": "Espèces",
+    "method_card": "Carte",
+    "method_transfer": "Virement",
+    "layawayNeedsCustomer": "Une réservation nécessite un nom de client",
+    "invalidDeposit": "L'acompte doit être supérieur à 0 et ne pas dépasser le total",
+    "completeSale": "Valider la vente",
+    "savedTitle": "Vente enregistrée",
+    "savedImmediate": "Vente finalisée pour {{total}}",
+    "savedLayaway": "Réservation ouverte pour {{total}}, acompte de {{deposit}} enregistré",
+    "saveError": "Impossible d'enregistrer cette vente"
+  },
+  "layaways": {
+    "title": "Réservations",
+    "empty": "Aucune réservation en cours.",
+    "total": "Total",
+    "outstanding": "Restant dû",
+    "due": "Échéance",
+    "recordPayment": "Enregistrer un paiement",
+    "invalidAmount": "Le montant doit être supérieur à 0 et ne pas dépasser le solde restant",
+    "savedTitle": "Paiement enregistré",
+    "handedOver": "Payé intégralement — la pièce de {{name}} est maintenant remise",
+    "paymentRecorded": "Paiement enregistré"
   }
 }
