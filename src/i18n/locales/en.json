@@ -4,9 +4,59 @@
     "save": "Save",
     "cancel": "Cancel",
     "loading": "Loading…",
-    "errorGeneric": "Something went wrong"
+    "errorGeneric": "Something went wrong",
+    "add": "Add",
+    "delete": "Delete",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "all": "All"
   },
   "home": {
-    "title": "Home"
+    "title": "Home",
+    "goToStock": "Go to Stock"
+  },
+  "stock": {
+    "title": "Stock",
+    "empty": "No pieces yet. Add your first piece to get started.",
+    "onHand": "On hand",
+    "committed": "Layaway — held",
+    "available": "Available",
+    "unique": "Unique",
+    "variants_one": "{{count}} variant",
+    "variants_other": "{{count}} variants"
+  },
+  "piece": {
+    "addTitle": "Add piece",
+    "name": "Name",
+    "namePlaceholder": "e.g. Bangle — Soap Bar",
+    "category": "Category",
+    "categoryPlaceholder": "e.g. Bangle, Ring, Necklace",
+    "material": "Material",
+    "itemType": "Type",
+    "itemTypeModel": "Model (repeatable)",
+    "itemTypeUnique": "Unique (one of a kind)",
+    "variantType": "Sizing",
+    "variantTypeNone": "No sizing",
+    "variantTypeRingSize": "Ring size",
+    "variantTypeLength": "Length",
+    "variants": "Variants",
+    "variantLabel": "Size / label",
+    "weightGrams": "Weight (g)",
+    "costMad": "Cost (MAD)",
+    "priceMad": "Price (MAD)",
+    "priceSuggested": "Suggested: {{price}}",
+    "addVariant": "Add size",
+    "removeVariant": "Remove",
+    "photos": "Photos",
+    "addPhoto": "Add photo",
+    "notes": "Notes",
+    "validationError": "Please fill in name, category and every variant's weight and cost",
+    "saveError": "Could not save this piece"
+  },
+  "pieceDetail": {
+    "variants": "Variants",
+    "photos": "Photos",
+    "noPhotos": "No photos yet",
+    "notFound": "Piece not found"
   }
 }

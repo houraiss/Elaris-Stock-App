@@ -1,0 +1,28 @@
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
+import { HomeScreen } from '../screens/HomeScreen';
+import { StockScreen } from '../screens/StockScreen';
+import { PieceDetailScreen } from '../screens/PieceDetailScreen';
+import { AddPieceScreen } from '../screens/AddPieceScreen';
+import type { RootStackParamList } from './types';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+export function RootNavigator() {
+  const { t } = useTranslation();
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: t('home.title') }} />
+        <Stack.Screen name="Stock" component={StockScreen} options={{ title: t('stock.title') }} />
+        <Stack.Screen name="PieceDetail" component={PieceDetailScreen} options={{ title: '' }} />
+        <Stack.Screen
+          name="AddPiece"
+          component={AddPieceScreen}
+          options={{ title: t('piece.addTitle') }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

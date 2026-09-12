@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import './src/i18n';
 import { useDbMigrations } from './src/db/useDbMigrations';
 import { seedDatabase } from './src/db/seed';
+import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
   const { t } = useTranslation();
@@ -22,16 +23,32 @@ export default function App() {
 
   const error = migrationError ?? seedError;
 
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>
+          {t('common.errorGeneric')}: {error.message}
+        </Text>
+        <StatusBar style="auto" />
+      </View>
+    );
+  }
+
+  if (!seeded) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator />
+        <Text>{t('common.loading')}</Text>
+        <StatusBar style="auto" />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t('common.appName')}</Text>
-      {error ? (
-        <Text style={styles.error}>{t('common.errorGeneric')}: {error.message}</Text>
-      ) : (
-        <Text>{seeded ? 'Database ready' : t('common.loading')}</Text>
-      )}
+    <>
+      <RootNavigator />
       <StatusBar style="auto" />
-    </View>
+    </>
   );
 }
 
@@ -42,10 +59,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
   },
   error: {
     color: '#b00020',

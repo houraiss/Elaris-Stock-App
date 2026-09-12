@@ -4,9 +4,59 @@
     "save": "حفظ",
     "cancel": "إلغاء",
     "loading": "جارٍ التحميل…",
-    "errorGeneric": "حدث خطأ ما"
+    "errorGeneric": "حدث خطأ ما",
+    "add": "إضافة",
+    "delete": "حذف",
+    "camera": "الكاميرا",
+    "gallery": "المعرض",
+    "all": "الكل"
   },
   "home": {
-    "title": "الرئيسية"
+    "title": "الرئيسية",
+    "goToStock": "الذهاب إلى المخزون"
+  },
+  "stock": {
+    "title": "المخزون",
+    "empty": "لا توجد قطع بعد. أضف قطعتك الأولى للبدء.",
+    "onHand": "المتوفر",
+    "committed": "محجوز — دفعة مقدمة",
+    "available": "متاح للبيع",
+    "unique": "قطعة فريدة",
+    "variants_one": "{{count}} نوع",
+    "variants_other": "{{count}} أنواع"
+  },
+  "piece": {
+    "addTitle": "إضافة قطعة",
+    "name": "الاسم",
+    "namePlaceholder": "مثال: سوار — قالب الصابون",
+    "category": "الفئة",
+    "categoryPlaceholder": "مثال: سوار، خاتم، قلادة",
+    "material": "المادة",
+    "itemType": "النوع",
+    "itemTypeModel": "طراز (قابل للتكرار)",
+    "itemTypeUnique": "قطعة فريدة",
+    "variantType": "المقاسات",
+    "variantTypeNone": "بدون مقاس",
+    "variantTypeRingSize": "مقاس الخاتم",
+    "variantTypeLength": "الطول",
+    "variants": "الأنواع",
+    "variantLabel": "المقاس / التسمية",
+    "weightGrams": "الوزن (غ)",
+    "costMad": "التكلفة (درهم)",
+    "priceMad": "السعر (درهم)",
+    "priceSuggested": "السعر المقترح: {{price}}",
+    "addVariant": "إضافة مقاس",
+    "removeVariant": "إزالة",
+    "photos": "الصور",
+    "addPhoto": "إضافة صورة",
+    "notes": "ملاحظات",
+    "validationError": "يرجى تعبئة الاسم والفئة ووزن وتكلفة كل نوع",
+    "saveError": "تعذر حفظ هذه القطعة"
+  },
+  "pieceDetail": {
+    "variants": "الأنواع",
+    "photos": "الصور",
+    "noPhotos": "لا توجد صور بعد",
+    "notFound": "القطعة غير موجودة"
   }
 }

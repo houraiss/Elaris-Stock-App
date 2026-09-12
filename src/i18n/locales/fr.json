@@ -4,9 +4,59 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "loading": "Chargement…",
-    "errorGeneric": "Une erreur est survenue"
+    "errorGeneric": "Une erreur est survenue",
+    "add": "Ajouter",
+    "delete": "Supprimer",
+    "camera": "Appareil photo",
+    "gallery": "Galerie",
+    "all": "Tous"
   },
   "home": {
-    "title": "Accueil"
+    "title": "Accueil",
+    "goToStock": "Voir le stock"
+  },
+  "stock": {
+    "title": "Stock",
+    "empty": "Aucune pièce pour l'instant. Ajoutez votre première pièce.",
+    "onHand": "En stock",
+    "committed": "Réservé — acompte",
+    "available": "Disponible",
+    "unique": "Pièce unique",
+    "variants_one": "{{count}} variante",
+    "variants_other": "{{count}} variantes"
+  },
+  "piece": {
+    "addTitle": "Ajouter une pièce",
+    "name": "Nom",
+    "namePlaceholder": "ex. Bracelet — Savon",
+    "category": "Catégorie",
+    "categoryPlaceholder": "ex. Bracelet, Bague, Collier",
+    "material": "Matière",
+    "itemType": "Type",
+    "itemTypeModel": "Modèle (répétable)",
+    "itemTypeUnique": "Pièce unique",
+    "variantType": "Tailles",
+    "variantTypeNone": "Sans taille",
+    "variantTypeRingSize": "Taille de bague",
+    "variantTypeLength": "Longueur",
+    "variants": "Variantes",
+    "variantLabel": "Taille / libellé",
+    "weightGrams": "Poids (g)",
+    "costMad": "Coût (MAD)",
+    "priceMad": "Prix (MAD)",
+    "priceSuggested": "Suggéré : {{price}}",
+    "addVariant": "Ajouter une taille",
+    "removeVariant": "Retirer",
+    "photos": "Photos",
+    "addPhoto": "Ajouter une photo",
+    "notes": "Notes",
+    "validationError": "Veuillez renseigner le nom, la catégorie et le poids/coût de chaque variante",
+    "saveError": "Impossible d'enregistrer cette pièce"
+  },
+  "pieceDetail": {
+    "variants": "Variantes",
+    "photos": "Photos",
+    "noPhotos": "Aucune photo pour l'instant",
+    "notFound": "Pièce introuvable"
   }
 }
