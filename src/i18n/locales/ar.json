@@ -17,7 +17,8 @@
     "title": "الرئيسية",
     "goToStock": "الذهاب إلى المخزون",
     "logSale": "تسجيل عملية بيع",
-    "layaways": "الحجوزات بالتقسيط"
+    "purchases": "المشتريات",
+    "balances": "الأرصدة"
   },
   "stock": {
     "title": "المخزون",
@@ -134,5 +135,41 @@
     "savedTitle": "تم تسجيل الدفعة",
     "handedOver": "تم الدفع بالكامل — تم تسليم قطعة {{name}} الآن",
     "paymentRecorded": "تم تسجيل الدفعة"
+  },
+  "purchases": {
+    "title": "المشتريات",
+    "supplier": "المورد",
+    "supplierPlaceholder": "ابحث أو اكتب اسم مورد جديد",
+    "kind_wholesaler": "تاجر جملة",
+    "kind_craftsman": "حرفي",
+    "createSupplier": "إنشاء المورد \"{{name}}\"",
+    "items": "العناصر",
+    "reference": "المرجع (اختياري)",
+    "dueOn": "تاريخ الاستحقاق (اختياري)",
+    "savePurchase": "حفظ عملية الشراء",
+    "savedTitle": "تم تسجيل الشراء",
+    "savedBody": "تم تحديث المخزون والمبلغ المستحق معًا.",
+    "saveError": "تعذر تسجيل عملية الشراء هذه",
+    "needSupplier": "اختر أو أنشئ موردًا أولاً",
+    "needItems": "أضف عنصرًا واحدًا على الأقل",
+    "invalidItems": "يجب أن يكون لكل عنصر كمية ووزن وتكلفة أكبر من 0",
+    "history": "سجل المشتريات",
+    "noHistory": "لا توجد مشتريات من هذا المورد بعد",
+    "total": "الإجمالي",
+    "paid": "المدفوع",
+    "outstanding": "المتبقي"
+  },
+  "balances": {
+    "title": "الأرصدة",
+    "customersTab": "الزبائن مدينون لك",
+    "suppliersTab": "أنت مدين للموردين",
+    "customersOweYou": "الزبائن مدينون لك",
+    "youOweSuppliers": "أنت مدين للموردين",
+    "netPosition": "الوضع الصافي",
+    "daysOutstanding_one": "{{count}} يوم معلق",
+    "daysOutstanding_other": "{{count}} أيام معلقة",
+    "overdue": "متأخر",
+    "whatsapp": "واتساب",
+    "noSupplierDebt": "لا يوجد دين حاليًا لأي مورد."
   }
 }

@@ -166,11 +166,12 @@ export async function getSaleOutstanding(saleId: string): Promise<number> {
 export interface OpenLayaway extends Sale {
   outstandingCentimes: number;
   customerName: string;
+  customerPhoneE164: string | null;
 }
 
 export async function listOpenLayaways(): Promise<OpenLayaway[]> {
   const rows = await db
-    .select({ sale: sales, customerName: customers.displayName })
+    .select({ sale: sales, customerName: customers.displayName, customerPhoneE164: customers.phoneE164 })
     .from(sales)
     .innerJoin(customers, eq(sales.customerId, customers.id))
     .where(eq(sales.status, 'layaway_open'));
@@ -178,7 +179,12 @@ export async function listOpenLayaways(): Promise<OpenLayaway[]> {
   const result: OpenLayaway[] = [];
   for (const row of rows) {
     const outstandingCentimes = await getSaleOutstanding(row.sale.id);
-    result.push({ ...row.sale, outstandingCentimes, customerName: row.customerName });
+    result.push({
+      ...row.sale,
+      outstandingCentimes,
+      customerName: row.customerName,
+      customerPhoneE164: row.customerPhoneE164,
+    });
   }
   return result;
 }

@@ -17,7 +17,8 @@
     "title": "Accueil",
     "goToStock": "Voir le stock",
     "logSale": "Enregistrer une vente",
-    "layaways": "Réservations"
+    "purchases": "Achats",
+    "balances": "Soldes"
   },
   "stock": {
     "title": "Stock",
@@ -134,5 +135,41 @@
     "savedTitle": "Paiement enregistré",
     "handedOver": "Payé intégralement — la pièce de {{name}} est maintenant remise",
     "paymentRecorded": "Paiement enregistré"
+  },
+  "purchases": {
+    "title": "Achats",
+    "supplier": "Fournisseur",
+    "supplierPlaceholder": "Rechercher ou saisir un nouveau fournisseur",
+    "kind_wholesaler": "Grossiste",
+    "kind_craftsman": "Artisan",
+    "createSupplier": "Créer le fournisseur « {{name}} »",
+    "items": "Articles",
+    "reference": "Référence (facultatif)",
+    "dueOn": "Date d'échéance (facultatif)",
+    "savePurchase": "Enregistrer l'achat",
+    "savedTitle": "Achat enregistré",
+    "savedBody": "Le stock et le montant dû ont tous deux été mis à jour.",
+    "saveError": "Impossible d'enregistrer cet achat",
+    "needSupplier": "Choisissez ou créez d'abord un fournisseur",
+    "needItems": "Ajoutez au moins un article",
+    "invalidItems": "Chaque article doit avoir une quantité, un poids et un coût supérieurs à 0",
+    "history": "Historique des achats",
+    "noHistory": "Aucun achat auprès de ce fournisseur pour l'instant",
+    "total": "Total",
+    "paid": "Payé",
+    "outstanding": "Restant dû"
+  },
+  "balances": {
+    "title": "Soldes",
+    "customersTab": "Les clients vous doivent",
+    "suppliersTab": "Vous devez aux fournisseurs",
+    "customersOweYou": "Les clients vous doivent",
+    "youOweSuppliers": "Vous devez aux fournisseurs",
+    "netPosition": "Position nette",
+    "daysOutstanding_one": "{{count}} jour en attente",
+    "daysOutstanding_other": "{{count}} jours en attente",
+    "overdue": "En retard",
+    "whatsapp": "WhatsApp",
+    "noSupplierDebt": "Vous ne devez rien à aucun fournisseur pour le moment."
   }
 }

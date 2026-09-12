@@ -17,7 +17,8 @@
     "title": "Home",
     "goToStock": "Go to Stock",
     "logSale": "Log a sale",
-    "layaways": "Layaways"
+    "purchases": "Purchases",
+    "balances": "Balances"
   },
   "stock": {
     "title": "Stock",
@@ -134,5 +135,41 @@
     "savedTitle": "Payment recorded",
     "handedOver": "Paid in full — {{name}}'s piece is now handed over",
     "paymentRecorded": "Payment recorded"
+  },
+  "purchases": {
+    "title": "Purchases",
+    "supplier": "Supplier",
+    "supplierPlaceholder": "Search or type a new supplier name",
+    "kind_wholesaler": "Wholesaler",
+    "kind_craftsman": "Craftsman",
+    "createSupplier": "Create supplier \"{{name}}\"",
+    "items": "Items",
+    "reference": "Reference (optional)",
+    "dueOn": "Due date (optional)",
+    "savePurchase": "Save purchase",
+    "savedTitle": "Purchase recorded",
+    "savedBody": "Stock and the amount owed have both been updated.",
+    "saveError": "Could not record this purchase",
+    "needSupplier": "Choose or create a supplier first",
+    "needItems": "Add at least one item",
+    "invalidItems": "Every item needs a quantity, weight and cost greater than 0",
+    "history": "Purchase history",
+    "noHistory": "No purchases from this supplier yet",
+    "total": "Total",
+    "paid": "Paid",
+    "outstanding": "Outstanding"
+  },
+  "balances": {
+    "title": "Balances",
+    "customersTab": "Customers owe you",
+    "suppliersTab": "You owe suppliers",
+    "customersOweYou": "Customers owe you",
+    "youOweSuppliers": "You owe suppliers",
+    "netPosition": "Net position",
+    "daysOutstanding_one": "{{count}} day outstanding",
+    "daysOutstanding_other": "{{count}} days outstanding",
+    "overdue": "Overdue",
+    "whatsapp": "WhatsApp",
+    "noSupplierDebt": "You don't owe any suppliers right now."
   }
 }

@@ -16,8 +16,11 @@ export function HomeScreen({ navigation }: Props) {
       <Pressable style={styles.button} onPress={() => navigation.navigate('Stock')}>
         <Text style={styles.buttonText}>{t('home.goToStock')}</Text>
       </Pressable>
-      <Pressable style={styles.button} onPress={() => navigation.navigate('Layaways')}>
-        <Text style={styles.buttonText}>{t('home.layaways')}</Text>
+      <Pressable style={styles.button} onPress={() => navigation.navigate('Purchases')}>
+        <Text style={styles.buttonText}>{t('home.purchases')}</Text>
+      </Pressable>
+      <Pressable style={styles.button} onPress={() => navigation.navigate('Balances')}>
+        <Text style={styles.buttonText}>{t('home.balances')}</Text>
       </Pressable>
     </View>
   );

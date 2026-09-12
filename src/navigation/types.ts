@@ -5,5 +5,6 @@ export type RootStackParamList = {
   AddPiece: undefined;
   StockIntake: undefined;
   LogSale: undefined;
-  Layaways: undefined;
+  Purchases: undefined;
+  Balances: undefined;
 };
