@@ -1,0 +1,12 @@
+{
+  "common": {
+    "appName": "Elaris",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "loading": "جارٍ التحميل…",
+    "errorGeneric": "حدث خطأ ما"
+  },
+  "home": {
+    "title": "الرئيسية"
+  }
+}

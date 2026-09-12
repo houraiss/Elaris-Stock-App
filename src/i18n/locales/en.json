@@ -1,0 +1,12 @@
+{
+  "common": {
+    "appName": "Elaris",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "errorGeneric": "Something went wrong"
+  },
+  "home": {
+    "title": "Home"
+  }
+}
