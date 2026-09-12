@@ -8,4 +8,5 @@ export type RootStackParamList = {
   Purchases: undefined;
   Balances: undefined;
   Settings: undefined;
+  Insights: undefined;
 };

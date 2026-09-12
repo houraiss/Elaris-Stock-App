@@ -17,51 +17,23 @@ import type { RootStackParamList } from '../navigation/types';
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../i18n';
 import { setLanguage } from '../settings/languagePreference';
 import { backupNow } from '../settings/backupExport';
-import { listMarkupRules, appendMarkupRule, type MarkupRuleWithMaterial } from '../db/repositories/markupRules';
+import {
+  listMarkupRules,
+  appendMarkupRule,
+  groupMarkupRules,
+  type MarkupRuleGroup,
+  type MarkupRuleWithMaterial,
+} from '../db/repositories/markupRules';
 import { listActiveMaterials } from '../db/repositories/materials';
-import { mgToGrams, gramsToMg, formatGrams } from '../utils/weight';
+import { getLowStockThreshold, setLowStockThreshold } from '../settings/lowStockThreshold';
+import { mgToGrams, gramsToMg } from '../utils/weight';
 import type { Material } from '../db/schema/materials';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
-interface RuleGroup {
-  key: string;
-  materialId: string | null;
-  materialName: string | null;
-  minWeightMg: number;
-  maxWeightMg: number;
-  active: MarkupRuleWithMaterial;
-  history: MarkupRuleWithMaterial[]; // everything else, newest first
-}
+type RuleGroup = MarkupRuleGroup;
 
 const NO_UPPER_BOUND = Number.MAX_SAFE_INTEGER;
-
-function groupRules(rules: MarkupRuleWithMaterial[]): RuleGroup[] {
-  const groups = new Map<string, MarkupRuleWithMaterial[]>();
-  for (const rule of rules) {
-    const key = `${rule.materialId ?? 'all'}|${rule.minWeightMg}|${rule.maxWeightMg}`;
-    const list = groups.get(key) ?? [];
-    list.push(rule);
-    groups.set(key, list);
-  }
-
-  const today = new Date().toISOString();
-  const result: RuleGroup[] = [];
-  for (const [key, list] of groups) {
-    const sorted = [...list].sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1));
-    const active = sorted.find((r) => r.effectiveFrom <= today) ?? sorted[sorted.length - 1];
-    result.push({
-      key,
-      materialId: active.materialId,
-      materialName: active.materialName,
-      minWeightMg: active.minWeightMg,
-      maxWeightMg: active.maxWeightMg,
-      active,
-      history: sorted.filter((r) => r.id !== active.id),
-    });
-  }
-  return result.sort((a, b) => a.minWeightMg - b.minWeightMg);
-}
 
 function formatWeightRange(minWeightMg: number, maxWeightMg: number): string {
   if (minWeightMg <= 0) return `< ${Math.round(mgToGrams(maxWeightMg))} g`;
@@ -89,11 +61,17 @@ export function SettingsScreen(_props: Props) {
   const [customEffectiveFrom, setCustomEffectiveFrom] = useState('');
   const [savingRule, setSavingRule] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
+  const [lowStockThreshold, setLowStockThresholdState] = useState('');
 
   const load = useCallback(async () => {
-    const [ruleRows, materialRows] = await Promise.all([listMarkupRules(), listActiveMaterials()]);
+    const [ruleRows, materialRows, threshold] = await Promise.all([
+      listMarkupRules(),
+      listActiveMaterials(),
+      getLowStockThreshold(),
+    ]);
     setRules(ruleRows);
     setMaterials(materialRows);
+    setLowStockThresholdState(String(threshold));
   }, []);
 
   useFocusEffect(
@@ -102,8 +80,16 @@ export function SettingsScreen(_props: Props) {
     }, [load]),
   );
 
-  const groups = groupRules(rules);
+  const groups = groupMarkupRules(rules);
   const todayIso = new Date().toISOString().slice(0, 10);
+
+  async function handleLowStockThresholdChange(text: string) {
+    setLowStockThresholdState(text);
+    const parsed = parseInt(text, 10);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      await setLowStockThreshold(parsed);
+    }
+  }
 
   async function handlePickLanguage(language: SupportedLanguage) {
     const { requiresRestart } = await setLanguage(language);
@@ -315,6 +301,14 @@ export function SettingsScreen(_props: Props) {
           </View>
         </View>
       )}
+
+      <Text style={styles.sectionTitle}>{t('settings.lowStockThreshold')}</Text>
+      <TextInput
+        style={styles.input}
+        value={lowStockThreshold}
+        onChangeText={handleLowStockThresholdChange}
+        keyboardType="number-pad"
+      />
 
       <Text style={styles.sectionTitle}>{t('settings.backup')}</Text>
       <Pressable style={styles.saveButton} onPress={handleBackup} disabled={backingUp}>

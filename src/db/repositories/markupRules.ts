@@ -18,6 +18,52 @@ export async function listMarkupRules(): Promise<MarkupRuleWithMaterial[]> {
   return rows.map((r) => ({ ...r.rule, materialName: r.materialName }));
 }
 
+export interface MarkupRuleGroup {
+  key: string;
+  materialId: string | null;
+  materialName: string | null;
+  minWeightMg: number;
+  maxWeightMg: number;
+  active: MarkupRuleWithMaterial;
+  history: MarkupRuleWithMaterial[]; // superseded rows, newest first
+}
+
+/**
+ * Groups rules by (material, weight band) and picks the one currently in
+ * effect per group — shared by Settings (editing) and Insights (comparing
+ * realised markup against what the rule table currently expects).
+ */
+export function groupMarkupRules(rules: MarkupRuleWithMaterial[]): MarkupRuleGroup[] {
+  const groups = new Map<string, MarkupRuleWithMaterial[]>();
+  for (const rule of rules) {
+    const key = `${rule.materialId ?? 'all'}|${rule.minWeightMg}|${rule.maxWeightMg}`;
+    const list = groups.get(key) ?? [];
+    list.push(rule);
+    groups.set(key, list);
+  }
+
+  const today = new Date().toISOString();
+  const result: MarkupRuleGroup[] = [];
+  for (const [key, list] of groups) {
+    const sorted = [...list].sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1));
+    const active = sorted.find((r) => r.effectiveFrom <= today) ?? sorted[sorted.length - 1];
+    result.push({
+      key,
+      materialId: active.materialId,
+      materialName: active.materialName,
+      minWeightMg: active.minWeightMg,
+      maxWeightMg: active.maxWeightMg,
+      active,
+      history: sorted.filter((r) => r.id !== active.id),
+    });
+  }
+  return result.sort((a, b) => a.minWeightMg - b.minWeightMg);
+}
+
+export async function listActiveMarkupBands(): Promise<MarkupRuleGroup[]> {
+  return groupMarkupRules(await listMarkupRules());
+}
+
 export interface AppendMarkupRuleInput {
   materialId: string | null;
   minWeightMg: number;
