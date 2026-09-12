@@ -18,7 +18,8 @@
     "goToStock": "Go to Stock",
     "logSale": "Log a sale",
     "purchases": "Purchases",
-    "balances": "Balances"
+    "balances": "Balances",
+    "settings": "Settings"
   },
   "stock": {
     "title": "Stock",
@@ -171,5 +172,30 @@
     "overdue": "Overdue",
     "whatsapp": "WhatsApp",
     "noSupplierDebt": "You don't owe any suppliers right now."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "language_en": "English",
+    "language_fr": "Français",
+    "language_ar": "العربية",
+    "restartTitle": "Restart needed",
+    "restartBody": "Right-to-left layout only applies after a restart.",
+    "restartNow": "Restart now",
+    "markupRules": "Markup rules",
+    "allMaterials": "All materials",
+    "previousRates": "Previous rates",
+    "editRule": "Change rate",
+    "addCustomRule": "Add a custom rule",
+    "minGrams": "Min weight (g)",
+    "maxGrams": "Max weight (g)",
+    "noUpperBound": "No upper limit",
+    "hasUpperBound": "Set an upper limit",
+    "markupPercent": "Markup (%)",
+    "effectiveFrom": "Effective from",
+    "invalidRule": "Check the weight range, markup and date",
+    "backup": "Backup",
+    "backupNow": "Back up now",
+    "backupError": "Could not create the backup"
   }
 }

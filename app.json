@@ -29,7 +29,8 @@
         {
           "cameraPermission": "Elaris uses the camera to scan barcodes and photograph pieces."
         }
-      ]
+      ],
+      "expo-sharing"
     ]
   }
 }

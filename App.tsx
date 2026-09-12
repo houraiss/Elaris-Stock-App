@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import './src/i18n';
 import { useDbMigrations } from './src/db/useDbMigrations';
 import { seedDatabase } from './src/db/seed';
+import { applyStoredLanguageOnBoot } from './src/settings/languagePreference';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -13,6 +14,11 @@ export default function App() {
   const { success: migrationsReady, error: migrationError } = useDbMigrations();
   const [seedError, setSeedError] = useState<Error | null>(null);
   const [seeded, setSeeded] = useState(false);
+  const [prefsReady, setPrefsReady] = useState(false);
+
+  useEffect(() => {
+    applyStoredLanguageOnBoot().finally(() => setPrefsReady(true));
+  }, []);
 
   useEffect(() => {
     if (!migrationsReady) return;
@@ -34,7 +40,7 @@ export default function App() {
     );
   }
 
-  if (!seeded) {
+  if (!seeded || !prefsReady) {
     return (
       <View style={styles.container}>
         <ActivityIndicator />

@@ -18,7 +18,8 @@
     "goToStock": "الذهاب إلى المخزون",
     "logSale": "تسجيل عملية بيع",
     "purchases": "المشتريات",
-    "balances": "الأرصدة"
+    "balances": "الأرصدة",
+    "settings": "الإعدادات"
   },
   "stock": {
     "title": "المخزون",
@@ -171,5 +172,30 @@
     "overdue": "متأخر",
     "whatsapp": "واتساب",
     "noSupplierDebt": "لا يوجد دين حاليًا لأي مورد."
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "language_en": "English",
+    "language_fr": "Français",
+    "language_ar": "العربية",
+    "restartTitle": "إعادة التشغيل مطلوبة",
+    "restartBody": "يتم تطبيق التخطيط من اليمين إلى اليسار بعد إعادة التشغيل فقط.",
+    "restartNow": "إعادة التشغيل الآن",
+    "markupRules": "قواعد هامش الربح",
+    "allMaterials": "جميع المواد",
+    "previousRates": "المعدلات السابقة",
+    "editRule": "تغيير المعدل",
+    "addCustomRule": "إضافة قاعدة مخصصة",
+    "minGrams": "الوزن الأدنى (غ)",
+    "maxGrams": "الوزن الأقصى (غ)",
+    "noUpperBound": "بدون حد أقصى",
+    "hasUpperBound": "تحديد حد أقصى",
+    "markupPercent": "هامش الربح (%)",
+    "effectiveFrom": "ساري من",
+    "invalidRule": "تحقق من نطاق الوزن وهامش الربح والتاريخ",
+    "backup": "النسخ الاحتياطي",
+    "backupNow": "نسخ احتياطي الآن",
+    "backupError": "تعذر إنشاء النسخة الاحتياطية"
   }
 }

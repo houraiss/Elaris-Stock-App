@@ -18,7 +18,8 @@
     "goToStock": "Voir le stock",
     "logSale": "Enregistrer une vente",
     "purchases": "Achats",
-    "balances": "Soldes"
+    "balances": "Soldes",
+    "settings": "Paramètres"
   },
   "stock": {
     "title": "Stock",
@@ -171,5 +172,30 @@
     "overdue": "En retard",
     "whatsapp": "WhatsApp",
     "noSupplierDebt": "Vous ne devez rien à aucun fournisseur pour le moment."
+  },
+  "settings": {
+    "title": "Paramètres",
+    "language": "Langue",
+    "language_en": "English",
+    "language_fr": "Français",
+    "language_ar": "العربية",
+    "restartTitle": "Redémarrage nécessaire",
+    "restartBody": "La mise en page de droite à gauche ne s'applique qu'après un redémarrage.",
+    "restartNow": "Redémarrer maintenant",
+    "markupRules": "Règles de marge",
+    "allMaterials": "Toutes les matières",
+    "previousRates": "Taux précédents",
+    "editRule": "Changer le taux",
+    "addCustomRule": "Ajouter une règle personnalisée",
+    "minGrams": "Poids min (g)",
+    "maxGrams": "Poids max (g)",
+    "noUpperBound": "Aucune limite supérieure",
+    "hasUpperBound": "Définir une limite supérieure",
+    "markupPercent": "Marge (%)",
+    "effectiveFrom": "Effective à partir du",
+    "invalidRule": "Vérifiez la plage de poids, la marge et la date",
+    "backup": "Sauvegarde",
+    "backupNow": "Sauvegarder maintenant",
+    "backupError": "Impossible de créer la sauvegarde"
   }
 }

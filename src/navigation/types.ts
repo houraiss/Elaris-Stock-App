@@ -7,4 +7,5 @@ export type RootStackParamList = {
   LogSale: undefined;
   Purchases: undefined;
   Balances: undefined;
+  Settings: undefined;
 };

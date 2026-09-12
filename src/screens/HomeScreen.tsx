@@ -22,6 +22,9 @@ export function HomeScreen({ navigation }: Props) {
       <Pressable style={styles.button} onPress={() => navigation.navigate('Balances')}>
         <Text style={styles.buttonText}>{t('home.balances')}</Text>
       </Pressable>
+      <Pressable style={styles.button} onPress={() => navigation.navigate('Settings')}>
+        <Text style={styles.buttonText}>{t('home.settings')}</Text>
+      </Pressable>
     </View>
   );
 }
