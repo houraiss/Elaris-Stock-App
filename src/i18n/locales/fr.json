@@ -211,7 +211,21 @@
     "lowStockThreshold": "Seuil de stock bas",
     "backup": "Sauvegarde",
     "backupNow": "Sauvegarder maintenant",
-    "backupError": "Impossible de créer la sauvegarde"
+    "backupError": "Impossible de créer la sauvegarde",
+    "cloudSync": "Synchronisation cloud",
+    "cloudNotConfigured": "Pas encore connecté à un projet cloud. Ajoutez EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY dans un fichier .env (voir .env.example) et reconstruisez l'application.",
+    "lastSync": "Dernière synchronisation : {{date}}",
+    "neverSynced": "Jamais synchronisé",
+    "syncNow": "Synchroniser maintenant",
+    "syncDoneTitle": "Synchronisé",
+    "syncDoneBody": "{{rows}} lignes et {{photos}} photos envoyées",
+    "syncError": "Échec de la synchronisation",
+    "restoreConfirmTitle": "Restaurer depuis le cloud ?",
+    "restoreConfirmBody": "Cela récupère tout depuis votre projet cloud vers cet appareil. À faire uniquement sur une installation neuve, sans rien saisi localement.",
+    "restoreNow": "Restaurer depuis le cloud",
+    "restoreDoneTitle": "Restauré",
+    "restoreDoneBody": "Vos données sont de retour, dont {{photos}} photos",
+    "restoreError": "Échec de la restauration"
   },
   "insights": {
     "title": "Analyses",

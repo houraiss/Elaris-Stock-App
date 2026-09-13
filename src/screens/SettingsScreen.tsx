@@ -27,6 +27,9 @@ import {
 import { listActiveMaterials } from '../db/repositories/materials';
 import { getLowStockThreshold, setLowStockThreshold } from '../settings/lowStockThreshold';
 import { mgToGrams, gramsToMg } from '../utils/weight';
+import { isCloudConfigured } from '../sync/supabaseClient';
+import { runSync, getLastSyncAt } from '../sync/syncEngine';
+import { restoreFromCloud, hasLocalCatalogueData } from '../sync/restore';
 import type { Material } from '../db/schema/materials';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
@@ -62,16 +65,24 @@ export function SettingsScreen(_props: Props) {
   const [savingRule, setSavingRule] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
   const [lowStockThreshold, setLowStockThresholdState] = useState('');
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [canRestore, setCanRestore] = useState(false);
 
   const load = useCallback(async () => {
-    const [ruleRows, materialRows, threshold] = await Promise.all([
+    const [ruleRows, materialRows, threshold, lastSync, hasData] = await Promise.all([
       listMarkupRules(),
       listActiveMaterials(),
       getLowStockThreshold(),
+      getLastSyncAt(),
+      hasLocalCatalogueData(),
     ]);
     setRules(ruleRows);
     setMaterials(materialRows);
     setLowStockThresholdState(String(threshold));
+    setLastSyncAt(lastSync);
+    setCanRestore(isCloudConfigured && !hasData);
   }, []);
 
   useFocusEffect(
@@ -191,6 +202,45 @@ export function SettingsScreen(_props: Props) {
     } finally {
       setBackingUp(false);
     }
+  }
+
+  async function handleSyncNow() {
+    setSyncing(true);
+    try {
+      const result = await runSync();
+      if (result) {
+        Alert.alert(
+          t('settings.syncDoneTitle'),
+          t('settings.syncDoneBody', { rows: result.pushedRowCount, photos: result.photosUploaded }),
+        );
+      }
+      await load();
+    } catch (err) {
+      Alert.alert(t('settings.syncError'), err instanceof Error ? err.message : String(err));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  function handleRestore() {
+    Alert.alert(t('settings.restoreConfirmTitle'), t('settings.restoreConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('settings.restoreNow'),
+        onPress: async () => {
+          setRestoring(true);
+          try {
+            const result = await restoreFromCloud();
+            Alert.alert(t('settings.restoreDoneTitle'), t('settings.restoreDoneBody', { photos: result.photosDownloaded }));
+            await load();
+          } catch (err) {
+            Alert.alert(t('settings.restoreError'), err instanceof Error ? err.message : String(err));
+          } finally {
+            setRestoring(false);
+          }
+        },
+      },
+    ]);
   }
 
   return (
@@ -314,6 +364,25 @@ export function SettingsScreen(_props: Props) {
       <Pressable style={styles.saveButton} onPress={handleBackup} disabled={backingUp}>
         {backingUp ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('settings.backupNow')}</Text>}
       </Pressable>
+
+      <Text style={styles.sectionTitle}>{t('settings.cloudSync')}</Text>
+      {!isCloudConfigured ? (
+        <Text style={styles.emptyText}>{t('settings.cloudNotConfigured')}</Text>
+      ) : (
+        <>
+          <Text style={styles.smallLabel}>
+            {lastSyncAt ? t('settings.lastSync', { date: new Date(lastSyncAt).toLocaleString() }) : t('settings.neverSynced')}
+          </Text>
+          <Pressable style={styles.saveButton} onPress={handleSyncNow} disabled={syncing}>
+            {syncing ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('settings.syncNow')}</Text>}
+          </Pressable>
+          {canRestore && (
+            <Pressable style={[styles.saveButton, styles.restoreButton]} onPress={handleRestore} disabled={restoring}>
+              {restoring ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('settings.restoreNow')}</Text>}
+            </Pressable>
+          )}
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -339,4 +408,6 @@ const styles = StyleSheet.create({
   smallButtonText: { fontWeight: '600' },
   saveButton: { backgroundColor: '#1a1a1a', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  restoreButton: { backgroundColor: '#7c2d12' },
+  emptyText: { color: '#888' },
 });

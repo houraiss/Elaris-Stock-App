@@ -211,7 +211,21 @@
     "lowStockThreshold": "حد المخزون المنخفض",
     "backup": "النسخ الاحتياطي",
     "backupNow": "نسخ احتياطي الآن",
-    "backupError": "تعذر إنشاء النسخة الاحتياطية"
+    "backupError": "تعذر إنشاء النسخة الاحتياطية",
+    "cloudSync": "المزامنة السحابية",
+    "cloudNotConfigured": "لم يتم الاتصال بمشروع سحابي بعد. أضف EXPO_PUBLIC_SUPABASE_URL و EXPO_PUBLIC_SUPABASE_ANON_KEY إلى ملف .env (راجع .env.example) ثم أعد بناء التطبيق.",
+    "lastSync": "آخر مزامنة: {{date}}",
+    "neverSynced": "لم تتم أي مزامنة بعد",
+    "syncNow": "مزامنة الآن",
+    "syncDoneTitle": "تمت المزامنة",
+    "syncDoneBody": "تم رفع {{rows}} سجل و {{photos}} صورة",
+    "syncError": "فشلت المزامنة",
+    "restoreConfirmTitle": "استعادة من السحابة؟",
+    "restoreConfirmBody": "سيؤدي هذا إلى سحب كل شيء من مشروعك السحابي إلى هذا الجهاز. قم بذلك فقط على تثبيت جديد لم تُدخل فيه أي بيانات محليًا بعد.",
+    "restoreNow": "استعادة من السحابة",
+    "restoreDoneTitle": "تمت الاستعادة",
+    "restoreDoneBody": "عادت بياناتك، بما في ذلك {{photos}} صورة",
+    "restoreError": "فشلت الاستعادة"
   },
   "insights": {
     "title": "التحليلات",

@@ -7,6 +7,7 @@ import './src/i18n';
 import { useDbMigrations } from './src/db/useDbMigrations';
 import { seedDatabase } from './src/db/seed';
 import { applyStoredLanguageOnBoot } from './src/settings/languagePreference';
+import { runSync } from './src/sync/syncEngine';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -26,6 +27,13 @@ export default function App() {
       .then(() => setSeeded(true))
       .catch((err) => setSeedError(err instanceof Error ? err : new Error(String(err))));
   }, [migrationsReady]);
+
+  useEffect(() => {
+    if (!seeded) return;
+    // Best-effort background sync — a no-op when cloud isn't configured, and
+    // any network/server failure here shouldn't block using the app offline.
+    runSync().catch(() => {});
+  }, [seeded]);
 
   const error = migrationError ?? seedError;
 

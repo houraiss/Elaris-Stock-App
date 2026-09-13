@@ -211,7 +211,21 @@
     "lowStockThreshold": "Low-stock threshold",
     "backup": "Backup",
     "backupNow": "Back up now",
-    "backupError": "Could not create the backup"
+    "backupError": "Could not create the backup",
+    "cloudSync": "Cloud sync",
+    "cloudNotConfigured": "Not connected to a cloud project yet. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to a .env file (see .env.example) and rebuild the app.",
+    "lastSync": "Last synced {{date}}",
+    "neverSynced": "Never synced yet",
+    "syncNow": "Sync now",
+    "syncDoneTitle": "Synced",
+    "syncDoneBody": "{{rows}} rows and {{photos}} photos uploaded",
+    "syncError": "Sync failed",
+    "restoreConfirmTitle": "Restore from cloud?",
+    "restoreConfirmBody": "This pulls everything from your cloud project into this device. Only do this on a fresh install with nothing entered locally yet.",
+    "restoreNow": "Restore from cloud",
+    "restoreDoneTitle": "Restored",
+    "restoreDoneBody": "Your data is back, including {{photos}} photos",
+    "restoreError": "Restore failed"
   },
   "insights": {
     "title": "Insights",
