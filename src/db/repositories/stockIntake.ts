@@ -33,6 +33,17 @@ export async function searchPieces(query: string): Promise<PieceSearchResult[]> 
   return rows.map((r) => ({ ...r.piece, materialName: r.materialName }));
 }
 
+/** For resolving a Tier 2 visual-match result (a piece id) back into a selectable result. */
+export async function getPieceSearchResultById(id: string): Promise<PieceSearchResult | null> {
+  const [row] = await db
+    .select({ piece: pieces, materialName: materials.name })
+    .from(pieces)
+    .innerJoin(materials, eq(pieces.materialId, materials.id))
+    .where(eq(pieces.id, id));
+  if (!row) return null;
+  return { ...row.piece, materialName: row.materialName };
+}
+
 export interface MatchedVariant {
   variant: Variant;
   piece: Piece;

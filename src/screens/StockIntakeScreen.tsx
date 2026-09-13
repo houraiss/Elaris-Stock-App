@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TextInput,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,11 +20,22 @@ import {
   restockVariant,
   searchPieces,
   searchVariantsForRestock,
+  getPieceSearchResultById,
   createPieceWithOpeningStock,
   addVariantWithOpeningStock,
   type MatchedVariant,
   type PieceSearchResult,
 } from '../db/repositories/stockIntake';
+import { addPhoto } from '../db/repositories/piecePhotos';
+import { capturePhoto } from '../media/capturePhoto';
+import {
+  isVisionAvailable,
+  getCandidatePhotos,
+  findVisualMatches,
+  describeNewPiece,
+  type VisualMatch,
+  type PieceDescription,
+} from '../vision/visionClient';
 import { suggestPrice } from '../pricing/suggestPrice';
 import { madToCentimes, centimesToMad } from '../utils/money';
 import { gramsToMg } from '../utils/weight';
@@ -33,12 +45,17 @@ import type { ItemType, VariantType } from '../db/schema/pieces';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StockIntake'>;
 
-type IntakeMode = 'scan' | 'manual';
+type IntakeMode = 'scan' | 'photoMatch' | 'manual';
 
 type Resolution =
   | { kind: 'none' }
   | { kind: 'matched'; match: MatchedVariant }
-  | { kind: 'lookup'; barcode: string | null };
+  | {
+      kind: 'lookup';
+      barcode: string | null;
+      initialPiece?: PieceSearchResult;
+      capturedPhotoUri?: string;
+    };
 
 const ITEM_TYPES: ItemType[] = ['model', 'unique'];
 const VARIANT_TYPES: VariantType[] = ['none', 'ring_size', 'length'];
@@ -84,6 +101,19 @@ export function StockIntakeScreen({ navigation }: Props) {
             {t('stockIntake.scan')}
           </Text>
         </Pressable>
+        {isVisionAvailable && (
+          <Pressable
+            style={[styles.modeButton, mode === 'photoMatch' && styles.modeButtonActive]}
+            onPress={() => {
+              setMode('photoMatch');
+              reset();
+            }}
+          >
+            <Text style={[styles.modeButtonText, mode === 'photoMatch' && styles.modeButtonTextActive]}>
+              {t('stockIntake.photoMatch')}
+            </Text>
+          </Pressable>
+        )}
         <Pressable
           style={[styles.modeButton, mode === 'manual' && styles.modeButtonActive]}
           onPress={() => {
@@ -102,7 +132,13 @@ export function StockIntakeScreen({ navigation }: Props) {
       )}
 
       {resolution.kind === 'lookup' && (
-        <PieceLookupPanel barcode={resolution.barcode} onDone={reset} onCancel={reset} />
+        <PieceLookupPanel
+          barcode={resolution.barcode}
+          initialPiece={resolution.initialPiece}
+          capturedPhotoUri={resolution.capturedPhotoUri}
+          onDone={reset}
+          onCancel={reset}
+        />
       )}
 
       {resolution.kind === 'none' && mode === 'scan' && (
@@ -133,6 +169,14 @@ export function StockIntakeScreen({ navigation }: Props) {
             </View>
           )}
         </View>
+      )}
+
+      {resolution.kind === 'none' && mode === 'photoMatch' && (
+        <PhotoMatchPanel
+          onSelectPiece={(piece) => setResolution({ kind: 'lookup', barcode: null, initialPiece: piece })}
+          onCreateNew={(photoUri) => setResolution({ kind: 'lookup', barcode: null, capturedPhotoUri: photoUri })}
+          onCancel={reset}
+        />
       )}
 
       {resolution.kind === 'none' && mode === 'manual' && (
@@ -267,12 +311,92 @@ function ManualSearchPanel({
   );
 }
 
+function PhotoMatchPanel({
+  onSelectPiece,
+  onCreateNew,
+  onCancel,
+}: {
+  onSelectPiece: (piece: PieceSearchResult) => void;
+  onCreateNew: (photoUri: string) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [matches, setMatches] = useState<(VisualMatch & { label: string })[] | null>(null);
+
+  async function handleTakePhoto() {
+    setMatches(null);
+    try {
+      const uri = await capturePhoto('camera');
+      if (!uri) return;
+      setPhotoUri(uri);
+      setLoading(true);
+      const candidates = await getCandidatePhotos();
+      const labelByPieceId = new Map(candidates.map((c) => [c.pieceId, c.label]));
+      const results = await findVisualMatches(uri, candidates);
+      setMatches(results.map((r) => ({ ...r, label: labelByPieceId.get(r.pieceId) ?? r.pieceId })));
+    } catch (err) {
+      Alert.alert(t('common.errorGeneric'), err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSelectMatch(pieceId: string) {
+    const piece = await getPieceSearchResultById(pieceId);
+    if (piece) onSelectPiece(piece);
+  }
+
+  return (
+    <View style={styles.panel}>
+      {!photoUri && (
+        <Pressable style={styles.smallButton} onPress={handleTakePhoto}>
+          <Text style={styles.smallButtonText}>{t('stockIntake.takePhoto')}</Text>
+        </Pressable>
+      )}
+      {photoUri && <Image source={{ uri: photoUri }} style={styles.matchPhoto} />}
+      {loading && <ActivityIndicator style={{ marginTop: 12 }} />}
+
+      {matches && matches.length === 0 && (
+        <Text style={styles.emptyText}>{t('stockIntake.noVisualMatches')}</Text>
+      )}
+      {matches?.map((m) => (
+        <Pressable key={m.pieceId} style={styles.searchRow} onPress={() => handleSelectMatch(m.pieceId)}>
+          <Text style={styles.rowTitle}>{m.label}</Text>
+          <Text style={styles.pieceSubtitle}>
+            {t('stockIntake.matchConfidence', { percent: Math.round(m.confidence * 100) })} · {m.reason}
+          </Text>
+        </Pressable>
+      ))}
+
+      {photoUri && !loading && (
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+          <Pressable style={styles.smallButton} onPress={handleTakePhoto}>
+            <Text style={styles.smallButtonText}>{t('stockIntake.retakePhoto')}</Text>
+          </Pressable>
+          <Pressable style={styles.smallButton} onPress={() => onCreateNew(photoUri)}>
+            <Text style={styles.smallButtonText}>{t('stockIntake.noneOfThese')}</Text>
+          </Pressable>
+        </View>
+      )}
+      <Pressable style={styles.smallButton} onPress={onCancel}>
+        <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 function PieceLookupPanel({
   barcode,
+  initialPiece,
+  capturedPhotoUri,
   onDone,
   onCancel,
 }: {
   barcode: string | null;
+  initialPiece?: PieceSearchResult;
+  capturedPhotoUri?: string;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -280,7 +404,7 @@ function PieceLookupPanel({
   const [materials, setMaterials] = useState<Material[]>([]);
   const [nameQuery, setNameQuery] = useState('');
   const [suggestions, setSuggestions] = useState<PieceSearchResult[]>([]);
-  const [selectedPiece, setSelectedPiece] = useState<PieceSearchResult | null>(null);
+  const [selectedPiece, setSelectedPiece] = useState<PieceSearchResult | null>(initialPiece ?? null);
   const [category, setCategory] = useState('');
   const [materialId, setMaterialId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<ItemType>('model');
@@ -292,6 +416,8 @@ function PieceLookupPanel({
   const [priceEdited, setPriceEdited] = useState(false);
   const [quantity, setQuantity] = useState('1');
   const [saving, setSaving] = useState(false);
+  const [describingPhoto, setDescribingPhoto] = useState(false);
+  const [pendingMaterialGuessCode, setPendingMaterialGuessCode] = useState<string | null>(null);
 
   useEffect(() => {
     listActiveMaterials().then((rows) => {
@@ -299,6 +425,39 @@ function PieceLookupPanel({
       setMaterialId((current) => current ?? rows[0]?.id ?? null);
     });
   }, []);
+
+  // Tier 2: a photo already matched to an existing piece — pre-fill as if selected from search.
+  useEffect(() => {
+    if (initialPiece) selectSuggestion(initialPiece);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Tier 3: no existing piece matched — ask the vision model to pre-fill a new one. Runs
+  // once per photo; the material guess (needs the materials list) is applied separately below.
+  useEffect(() => {
+    if (initialPiece || !capturedPhotoUri) return;
+    setDescribingPhoto(true);
+    describeNewPiece(capturedPhotoUri)
+      .then((description: PieceDescription) => {
+        setNameQuery(description.suggestedName);
+        setCategory(description.category);
+        if (description.materialGuess) setPendingMaterialGuessCode(description.materialGuess);
+      })
+      .catch(() => {
+        // Vision pre-fill is a convenience — fall through to a blank manual form.
+      })
+      .finally(() => setDescribingPhoto(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capturedPhotoUri]);
+
+  useEffect(() => {
+    if (!pendingMaterialGuessCode) return;
+    const guessed = materials.find((m) => m.code === pendingMaterialGuessCode);
+    if (guessed) {
+      setMaterialId(guessed.id);
+      setPendingMaterialGuessCode(null);
+    }
+  }, [pendingMaterialGuessCode, materials]);
 
   useEffect(() => {
     if (selectedPiece || nameQuery.trim().length === 0) {
@@ -381,7 +540,7 @@ function PieceLookupPanel({
           quantity: qty,
         });
       } else {
-        await createPieceWithOpeningStock({
+        const { piece } = await createPieceWithOpeningStock({
           name: nameQuery.trim(),
           category: category.trim(),
           materialId,
@@ -391,6 +550,9 @@ function PieceLookupPanel({
             { label: finalLabel, nominalWeightMg: weightMg, costCentimes, priceCentimes, barcode, quantity: qty },
           ],
         });
+        if (capturedPhotoUri) {
+          await addPhoto(piece.id, capturedPhotoUri);
+        }
       }
       Alert.alert(t('stockIntake.savedTitle'), t('stockIntake.savedNew', { name: nameQuery.trim() }));
       onDone();
@@ -406,6 +568,17 @@ function PieceLookupPanel({
       {barcode && (
         <View style={styles.matchBadge}>
           <Text style={styles.matchBadgeText}>{t('stockIntake.newBarcode', { code: barcode })}</Text>
+        </View>
+      )}
+      {capturedPhotoUri && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <Image source={{ uri: capturedPhotoUri }} style={styles.matchPhotoSmall} />
+          {describingPhoto && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator />
+              <Text style={styles.pieceSubtitle}>{t('stockIntake.describingPhoto')}</Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -561,6 +734,9 @@ const styles = StyleSheet.create({
   modeButtonText: { color: '#333', fontWeight: '600' },
   modeButtonTextActive: { color: '#fff' },
   scanArea: { flex: 1, paddingHorizontal: 12, paddingBottom: 12 },
+  matchPhoto: { width: '100%', height: 220, borderRadius: 12, backgroundColor: '#eee', marginTop: 8 },
+  matchPhotoSmall: { width: 56, height: 56, borderRadius: 8, backgroundColor: '#eee' },
+  emptyText: { color: '#888', marginTop: 8 },
   camera: { flex: 1, borderRadius: 12, overflow: 'hidden' },
   scanOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scanFrame: {
