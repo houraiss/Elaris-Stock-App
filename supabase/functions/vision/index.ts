@@ -130,8 +130,11 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!ANTHROPIC_API_KEY) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured' }), {
-      status: 500,
+    // Status 200 with a distinguishable body (not a 500) — the client checks
+    // for this exact shape to show a friendly "this is a paid feature,
+    // not yet turned on" message instead of a raw error.
+    return new Response(JSON.stringify({ error: 'not_configured' }), {
+      status: 200,
       headers: { ...CORS_HEADERS, 'content-type': 'application/json' },
     });
   }

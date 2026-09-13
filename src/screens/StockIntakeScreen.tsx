@@ -33,6 +33,7 @@ import {
   getCandidatePhotos,
   findVisualMatches,
   describeNewPiece,
+  VisionNotEnabledError,
   type VisualMatch,
   type PieceDescription,
 } from '../vision/visionClient';
@@ -337,7 +338,11 @@ function PhotoMatchPanel({
       const results = await findVisualMatches(uri, candidates);
       setMatches(results.map((r) => ({ ...r, label: labelByPieceId.get(r.pieceId) ?? r.pieceId })));
     } catch (err) {
-      Alert.alert(t('common.errorGeneric'), err instanceof Error ? err.message : String(err));
+      if (err instanceof VisionNotEnabledError) {
+        Alert.alert(t('stockIntake.proFeatureTitle'), t('stockIntake.proFeatureBody'));
+      } else {
+        Alert.alert(t('common.errorGeneric'), err instanceof Error ? err.message : String(err));
+      }
     } finally {
       setLoading(false);
     }

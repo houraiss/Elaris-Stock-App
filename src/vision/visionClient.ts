@@ -24,6 +24,21 @@ async function toImagePayload(uri: string): Promise<ImagePayload> {
   return { mediaType: mediaTypeFor(uri), data };
 }
 
+/** Thrown when the Edge Function is deployed but its Anthropic key hasn't
+ *  been turned on yet — a paid feature not yet enabled, not a bug. */
+export class VisionNotEnabledError extends Error {
+  constructor() {
+    super('Vision features are not turned on yet');
+    this.name = 'VisionNotEnabledError';
+  }
+}
+
+function checkEnabled(data: unknown): void {
+  if (data && typeof data === 'object' && (data as { error?: string }).error === 'not_configured') {
+    throw new VisionNotEnabledError();
+  }
+}
+
 export interface MatchCandidateInput {
   pieceId: string;
   label: string;
@@ -62,6 +77,7 @@ export async function findVisualMatches(
     body: { mode: 'match', image, candidates: candidatePayloads },
   });
   if (error) throw new Error(error.message);
+  checkEnabled(data);
   return (data?.matches ?? []) as VisualMatch[];
 }
 
@@ -82,5 +98,6 @@ export async function describeNewPiece(photoUri: string): Promise<PieceDescripti
     body: { mode: 'describe', image },
   });
   if (error) throw new Error(error.message);
+  checkEnabled(data);
   return data as PieceDescription;
 }
