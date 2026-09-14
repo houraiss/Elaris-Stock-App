@@ -50,7 +50,11 @@ outside this repo).
 - **Phase 2 remainder**: custom orders pipeline (quote → ordered → in
   production → ready → deliver, delivery converts to a real sale) and
   reservations (short holds, "Hold" button on piece detail).
-- **Phase 6 (Social, manual)**: NOT started.
+- **Phase 6 (Social, manual)**: done. New Social screen (per-platform
+  follower trend, weekly snapshot entry, post entry with piece
+  tagging), piece detail now lists "posts featuring this piece",
+  Insights gained follower-growth-vs-sales and post-to-sales
+  correlation sections. Self-tested end-to-end on the emulator.
 - **Phase 7 (Social, automated)**: NOT started — explicitly optional in
   the plan itself, deprioritized until Phase 6 shows which numbers
   matter.
@@ -215,10 +219,36 @@ scroll position shifts when the keyboard shows/hides).
 Both fixes: `npx tsc --noEmit` clean, `npx jest --silent` 19/19 passing,
 committed and pushed.
 
+## Phase 6 — Social, manual (DONE)
+
+Built on top of the `social_snapshots` / `social_posts` / `post_pieces`
+schema and sync plumbing that already existed from session 1.
+
+- **`src/db/repositories/social.ts`**: `createSnapshot`, `listSnapshots`
+  (chronological, for the trend chart), `createPost` (+ tags into
+  `post_pieces`), `listPosts` (with joined piece names), `getPostsForPiece`.
+- **`src/screens/SocialScreen.tsx`**: Instagram/TikTok toggle, follower
+  trend `BarChart`, inline "add weekly snapshot" form, post list, and a
+  full-screen "add post" panel with piece tagging (search-and-select,
+  same pattern as the customer/supplier pickers elsewhere).
+- **`PieceDetailScreen`**: new "Posts featuring this piece" footer section.
+- **`InsightsScreen`** / **`insights.ts`**: `getFollowerGrowthVsSales`
+  (twin monthly bar charts — followers, then booked revenue, same
+  x-axis) and `getPostToSalesCorrelation` (units of a post's tagged
+  pieces sold in the 14 days after it went up).
+- i18n: full `social` section plus additions to `home`/`pieceDetail`/
+  `insights` in all three locales.
+
+Self-tested end-to-end on the emulator: logged an Instagram snapshot
+(1250 followers) and a post tagging "Test Bangle", confirmed the trend
+chart, the post list, the piece detail's posts section, and both new
+Insights sections all render correctly — including the empty state when
+switching to the (still empty) TikTok tab.
+
 ## Immediate next step
 
-Custom Orders and Reservations are now fully verified. Everything in the
-implementation plan through Phase 5 + Phase 2 remainder is built and
-tested. Phase 6 (manual social tracking: weekly snapshots, post entry,
-piece tagging, growth vs. sales correlation) is the next unbuilt phase
-per the plan — **check with the user before starting it**, don't assume.
+Everything through Phase 6 is built and tested. Phase 7 (Social,
+automated — Instagram Graph API / TikTok Display API) is next per the
+plan, but it's explicitly optional and deprioritized until Phase 6's
+manual numbers show which ones are actually worth automating —
+**check with the user before starting it**, don't assume.
