@@ -140,18 +140,52 @@ time to work out.
   myself directly via `curl` with the anon key — useful for confirming
   sync actually happened without waiting on the user.
 
+## Android emulator — DONE, this is now the primary preview loop
+
+Working end-to-end as of the session that set it up. Recap for a fresh
+session:
+
+- JDK: `C:\Users\User\android-tools\jdk17`
+- Android SDK: `C:\Users\User\android-tools\android-sdk`
+- AVD name: `elaris_test` (Pixel 5 profile, android-34 google_apis x86_64)
+- Expo Go APK (SDK 57, v57.0.9) sideloaded at
+  `C:\Users\User\android-tools\expo-go-57.apk` — re-download via
+  `https://api.expo.dev/v2/versions/latest` → `data.sdkVersions["57.0.0"].androidClientUrl`
+  if a newer Expo Go build is ever needed (`curl --ssl-no-revoke` needed
+  because of the Avast interception noted above).
+
+**Launch sequence from a cold start:**
+```
+# 1. Start the emulator (background)
+"C:\Users\User\android-tools\android-sdk\emulator\emulator.exe" -avd elaris_test -no-snapshot-load
+
+# 2. Wait for boot
+adb wait-for-device
+adb shell getprop sys.boot_completed   # poll until "1"
+
+# 3. Start Metro from elaris/ (background), then:
+adb reverse tcp:8081 tcp:8081
+adb shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081"
+```
+(`adb` = `C:\Users\User\android-tools\android-sdk\platform-tools\adb.exe`,
+already on PATH-equivalent via full path — always prefix with
+`export ANDROID_HOME=...` in a fresh Bash session.)
+
+**Screenshotting to self-verify** (I can now do this myself, no need to
+ask the user what they see): `adb shell screencap -p //sdcard/x.png` then
+`adb pull //sdcard/x.png <local path>` then Read the local file. **Use a
+leading `//` on the device-side path** — Git Bash's MSYS layer mangles a
+single-leading-slash path into a bogus Windows path otherwise.
+
+**Important**: the emulator has its own local SQLite database, separate
+from the phone's. It starts empty. Use Settings → "Restore from cloud"
+in the emulator to pull the same data that's been synced from the phone,
+if realistic data is needed for a test.
+
 ## Immediate next step
 
-1. Relaunch the Android emulator (`emulator -avd elaris_test`) now that
-   Hypervisor Platform should be enabled post-reboot; confirm it boots
-   via `adb wait-for-device` + polling `sys.boot_completed`.
-2. Download the Expo Go APK matching Expo SDK 57 and `adb install` it
-   (sideload — no Play Store login needed).
-3. Point it at the running Metro server (`adb reverse tcp:8081
-   tcp:8081`, then launch Expo Go with `exp://localhost:8081`, or set
-   the manifest URL directly).
-4. Verify with an `adb shell screencap` that the app actually renders.
-5. Once the emulator is the working preview loop, continue with
-   whatever the user directs — Phase 6 (manual social tracking) is the
-   next unbuilt phase per the plan, but check with the user first
-   rather than assuming.
+Emulator is verified working (Home dashboard renders correctly, screenshot
+confirmed). Next: self-test Custom Orders and Reservations (built but
+never live-tested) using the emulator, then continue per user direction —
+Phase 6 (manual social tracking) is the next unbuilt phase per the plan,
+but confirm with the user before assuming that's next.
