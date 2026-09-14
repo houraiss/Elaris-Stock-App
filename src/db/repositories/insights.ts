@@ -130,9 +130,15 @@ export async function getHomeSummary(lowStockThreshold: number): Promise<HomeSum
     if (onHand > 0) inventoryValueCentimes += onHand * (costByVariant.get(variantId) ?? 0);
   }
 
-  // Low stock: active variants whose available quantity is at or below the threshold.
-  const activeVariantIds = allVariants.map((v) => v.id);
-  const levels = await getStockLevels(activeVariantIds);
+  // Low stock: 'model' variants whose available quantity is at or below the
+  // threshold — a 'unique' piece has no restock concept (it's a one-off; at
+  // qty 0 it just means "sold", not "reorder soon"), so those are excluded.
+  const modelVariantRows = await db
+    .select({ id: variants.id })
+    .from(variants)
+    .innerJoin(pieces, eq(variants.pieceId, pieces.id))
+    .where(eq(pieces.itemType, 'model'));
+  const levels = await getStockLevels(modelVariantRows.map((v) => v.id));
   let lowStockCount = 0;
   for (const level of levels.values()) {
     if (level.available <= lowStockThreshold) lowStockCount++;
