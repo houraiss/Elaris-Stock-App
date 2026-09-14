@@ -11,4 +11,5 @@ export type RootStackParamList = {
   Insights: undefined;
   CustomOrders: undefined;
   Reservations: undefined;
+  Social: undefined;
 };

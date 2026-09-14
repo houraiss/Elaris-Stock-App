@@ -9,6 +9,7 @@ import { addPhoto } from '../db/repositories/piecePhotos';
 import { capturePhoto } from '../media/capturePhoto';
 import { createReservation } from '../db/repositories/reservations';
 import { searchCustomers, createCustomer } from '../db/repositories/customers';
+import { getPostsForPiece, type PostForPiece } from '../db/repositories/social';
 import { formatMad } from '../utils/money';
 import { formatGrams } from '../utils/weight';
 import type { Customer } from '../db/schema/customers';
@@ -19,13 +20,15 @@ export function PieceDetailScreen({ route, navigation }: Props) {
   const { t } = useTranslation();
   const { pieceId } = route.params;
   const [detail, setDetail] = useState<PieceDetail | null>(null);
+  const [posts, setPosts] = useState<PostForPiece[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const d = await getPieceDetail(pieceId);
+      const [d, p] = await Promise.all([getPieceDetail(pieceId), getPostsForPiece(pieceId)]);
       setDetail(d);
+      setPosts(p);
       if (d) navigation.setOptions({ title: d.name });
     } finally {
       setLoading(false);
@@ -94,6 +97,30 @@ export function PieceDetailScreen({ route, navigation }: Props) {
           </View>
 
           <Text style={styles.sectionTitle}>{t('pieceDetail.variants')}</Text>
+        </View>
+      }
+      ListFooterComponent={
+        <View>
+          <Text style={styles.sectionTitle}>{t('pieceDetail.posts')}</Text>
+          {posts.length === 0 ? (
+            <Text style={[styles.emptyText, { paddingHorizontal: 16 }]}>{t('pieceDetail.noPosts')}</Text>
+          ) : (
+            posts.map((post) => (
+              <View key={post.id} style={styles.postRow}>
+                <Text style={styles.postRowTitle}>
+                  {t(`social.platform_${post.platform}`)} · {post.postedAt.slice(0, 10)}
+                </Text>
+                {post.caption ? (
+                  <Text style={styles.postRowCaption} numberOfLines={2}>
+                    {post.caption}
+                  </Text>
+                ) : null}
+                <Text style={styles.postRowMeta}>
+                  {t('social.likes')}: {post.likes}
+                </Text>
+              </View>
+            ))
+          )}
         </View>
       }
       renderItem={({ item }) => <VariantRow variant={item} onReserved={load} />}
@@ -237,4 +264,13 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
   suggestionBox: { borderWidth: 1, borderColor: '#eee', borderRadius: 8, paddingHorizontal: 10 },
   searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
+  postRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#eee',
+  },
+  postRowTitle: { fontSize: 13, fontWeight: '600', color: '#333' },
+  postRowCaption: { fontSize: 13, color: '#666', marginTop: 2 },
+  postRowMeta: { fontSize: 12, color: '#888', marginTop: 2 },
 });

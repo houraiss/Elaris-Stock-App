@@ -23,6 +23,7 @@
     "insights": "Insights",
     "customOrders": "Custom orders",
     "reservations": "Reservations",
+    "social": "Social",
     "bookedThisMonth": "Booked this month",
     "cashCollected": "Cash collected",
     "grossMargin": "Gross margin",
@@ -80,7 +81,9 @@
     "variants": "Variants",
     "photos": "Photos",
     "noPhotos": "No photos yet",
-    "notFound": "Piece not found"
+    "notFound": "Piece not found",
+    "posts": "Posts featuring this piece",
+    "noPosts": "Not featured in any post yet"
   },
   "stockIntake": {
     "title": "Stock intake",
@@ -260,7 +263,15 @@
     "noDeadStock": "Nothing looks like dead stock right now",
     "neverSold": "Never sold",
     "daysSinceSale_one": "{{count}} day since last sale",
-    "daysSinceSale_other": "{{count}} days since last sale"
+    "daysSinceSale_other": "{{count}} days since last sale",
+    "followerGrowth": "Follower growth vs. sales",
+    "noFollowerData": "No snapshots yet to compare",
+    "followers": "Followers",
+    "bookedRevenue": "Revenue booked",
+    "postToSales": "Post-to-sales correlation",
+    "noPostsYet": "No tagged posts yet",
+    "unitsSoldAfter_one": "{{count}} unit sold after",
+    "unitsSoldAfter_other": "{{count}} units sold after"
   },
   "customOrders": {
     "title": "Custom orders",
@@ -301,5 +312,33 @@
     "whatsapp": "WhatsApp",
     "savedTitle": "Held",
     "savedBody": "{{name}} is held for {{customer}}"
+  },
+  "social": {
+    "title": "Social",
+    "platform_instagram": "Instagram",
+    "platform_tiktok": "TikTok",
+    "followerTrend": "Follower trend",
+    "noSnapshotsYet": "No snapshots yet",
+    "addSnapshot": "Add weekly snapshot",
+    "capturedOn": "Date",
+    "followers": "Followers",
+    "postsCount": "Posts",
+    "reach": "Reach (optional)",
+    "profileViews": "Profile views (optional)",
+    "snapshotValidationError": "Enter a date, followers and posts count",
+    "posts": "Posts",
+    "addPost": "Add post",
+    "noPostsYet": "No posts logged yet",
+    "postedOn": "Posted on",
+    "caption": "Caption (optional)",
+    "likes": "Likes",
+    "comments": "Comments",
+    "shares": "Shares",
+    "saves": "Saves",
+    "views": "Views",
+    "taggedPieces": "Pieces featured",
+    "taggedPiecesPlaceholder": "Search a piece to tag",
+    "postValidationError": "Enter a posted date",
+    "postSaveError": "Could not save this post"
   }
 }

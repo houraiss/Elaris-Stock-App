@@ -23,6 +23,7 @@
     "insights": "التحليلات",
     "customOrders": "الطلبات الخاصة",
     "reservations": "الحجوزات",
+    "social": "التواصل الاجتماعي",
     "bookedThisMonth": "المسجل هذا الشهر",
     "cashCollected": "المحصّل نقدًا",
     "grossMargin": "هامش الربح الإجمالي",
@@ -80,7 +81,9 @@
     "variants": "الأنواع",
     "photos": "الصور",
     "noPhotos": "لا توجد صور بعد",
-    "notFound": "القطعة غير موجودة"
+    "notFound": "القطعة غير موجودة",
+    "posts": "المنشورات التي ظهرت فيها هذه القطعة",
+    "noPosts": "لم تظهر في أي منشور بعد"
   },
   "stockIntake": {
     "title": "إدخال المخزون",
@@ -260,7 +263,15 @@
     "noDeadStock": "لا يوجد حاليًا ما يشبه المخزون الراكد",
     "neverSold": "لم يُبع أبدًا",
     "daysSinceSale_one": "{{count}} يوم منذ آخر بيع",
-    "daysSinceSale_other": "{{count}} أيام منذ آخر بيع"
+    "daysSinceSale_other": "{{count}} أيام منذ آخر بيع",
+    "followerGrowth": "نمو المتابعين مقابل المبيعات",
+    "noFollowerData": "لا توجد بيانات كافية للمقارنة بعد",
+    "followers": "المتابعون",
+    "bookedRevenue": "الإيرادات المسجلة",
+    "postToSales": "العلاقة بين المنشورات والمبيعات",
+    "noPostsYet": "لا توجد منشورات موسومة بعد",
+    "unitsSoldAfter_one": "بيعت {{count}} قطعة بعد",
+    "unitsSoldAfter_other": "بيعت {{count}} قطع بعد"
   },
   "customOrders": {
     "title": "الطلبات الخاصة",
@@ -301,5 +312,33 @@
     "whatsapp": "واتساب",
     "savedTitle": "تم الحجز",
     "savedBody": "تم حجز {{name}} لصالح {{customer}}"
+  },
+  "social": {
+    "title": "التواصل الاجتماعي",
+    "platform_instagram": "إنستغرام",
+    "platform_tiktok": "تيك توك",
+    "followerTrend": "اتجاه عدد المتابعين",
+    "noSnapshotsYet": "لا توجد لقطات بعد",
+    "addSnapshot": "إضافة لقطة أسبوعية",
+    "capturedOn": "التاريخ",
+    "followers": "المتابعون",
+    "postsCount": "عدد المنشورات",
+    "reach": "الوصول (اختياري)",
+    "profileViews": "مشاهدات الملف الشخصي (اختياري)",
+    "snapshotValidationError": "أدخل التاريخ وعدد المتابعين وعدد المنشورات",
+    "posts": "المنشورات",
+    "addPost": "إضافة منشور",
+    "noPostsYet": "لا توجد منشورات مسجلة بعد",
+    "postedOn": "تاريخ النشر",
+    "caption": "التعليق (اختياري)",
+    "likes": "الإعجابات",
+    "comments": "التعليقات",
+    "shares": "المشاركات",
+    "saves": "الحفظ",
+    "views": "المشاهدات",
+    "taggedPieces": "القطع الموسومة",
+    "taggedPiecesPlaceholder": "ابحث عن قطعة لوسمها",
+    "postValidationError": "أدخل تاريخ النشر",
+    "postSaveError": "تعذر حفظ هذا المنشور"
   }
 }

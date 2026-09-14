@@ -23,6 +23,7 @@
     "insights": "Analyses",
     "customOrders": "Commandes sur mesure",
     "reservations": "Réservations",
+    "social": "Réseaux sociaux",
     "bookedThisMonth": "Enregistré ce mois-ci",
     "cashCollected": "Encaissé",
     "grossMargin": "Marge brute",
@@ -80,7 +81,9 @@
     "variants": "Variantes",
     "photos": "Photos",
     "noPhotos": "Aucune photo pour l'instant",
-    "notFound": "Pièce introuvable"
+    "notFound": "Pièce introuvable",
+    "posts": "Publications mettant en avant cette pièce",
+    "noPosts": "Pas encore apparue dans une publication"
   },
   "stockIntake": {
     "title": "Entrée de stock",
@@ -260,7 +263,15 @@
     "noDeadStock": "Rien ne ressemble à du stock dormant pour l'instant",
     "neverSold": "Jamais vendu",
     "daysSinceSale_one": "{{count}} jour depuis la dernière vente",
-    "daysSinceSale_other": "{{count}} jours depuis la dernière vente"
+    "daysSinceSale_other": "{{count}} jours depuis la dernière vente",
+    "followerGrowth": "Croissance des abonnés vs. ventes",
+    "noFollowerData": "Pas encore de relevés à comparer",
+    "followers": "Abonnés",
+    "bookedRevenue": "Chiffre d'affaires enregistré",
+    "postToSales": "Corrélation publications / ventes",
+    "noPostsYet": "Aucune publication taguée pour l'instant",
+    "unitsSoldAfter_one": "{{count}} unité vendue après",
+    "unitsSoldAfter_other": "{{count}} unités vendues après"
   },
   "customOrders": {
     "title": "Commandes sur mesure",
@@ -301,5 +312,33 @@
     "whatsapp": "WhatsApp",
     "savedTitle": "Réservé",
     "savedBody": "{{name}} est réservé pour {{customer}}"
+  },
+  "social": {
+    "title": "Réseaux sociaux",
+    "platform_instagram": "Instagram",
+    "platform_tiktok": "TikTok",
+    "followerTrend": "Évolution des abonnés",
+    "noSnapshotsYet": "Aucun relevé pour l'instant",
+    "addSnapshot": "Ajouter un relevé hebdomadaire",
+    "capturedOn": "Date",
+    "followers": "Abonnés",
+    "postsCount": "Publications",
+    "reach": "Portée (facultatif)",
+    "profileViews": "Vues du profil (facultatif)",
+    "snapshotValidationError": "Renseignez une date, le nombre d'abonnés et de publications",
+    "posts": "Publications",
+    "addPost": "Ajouter une publication",
+    "noPostsYet": "Aucune publication enregistrée",
+    "postedOn": "Publiée le",
+    "caption": "Légende (facultatif)",
+    "likes": "J'aime",
+    "comments": "Commentaires",
+    "shares": "Partages",
+    "saves": "Enregistrements",
+    "views": "Vues",
+    "taggedPieces": "Pièces mises en avant",
+    "taggedPiecesPlaceholder": "Chercher une pièce à taguer",
+    "postValidationError": "Renseignez une date de publication",
+    "postSaveError": "Impossible d'enregistrer cette publication"
   }
 }

@@ -11,6 +11,8 @@ import {
   getCostTrendsByMaterial,
   getRingSizePopularity,
   getDeadStock,
+  getFollowerGrowthVsSales,
+  getPostToSalesCorrelation,
   type MonthlyRevenue,
   type MarkupComparison,
   type SalesBreakdownRow,
@@ -18,13 +20,17 @@ import {
   type CostTrendSeries,
   type RingSizePopularity,
   type DeadStockRow,
+  type FollowerGrowthPoint,
+  type PostSalesCorrelationRow,
 } from '../db/repositories/insights';
+import type { SocialPlatform } from '../db/schema/social';
 import { BarChart } from '../charts/BarChart';
 import { formatMad } from '../utils/money';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Insights'>;
 
 const DIMENSIONS: SalesBreakdownDimension[] = ['material', 'category', 'channel'];
+const SOCIAL_PLATFORMS: SocialPlatform[] = ['instagram', 'tiktok'];
 
 export function InsightsScreen(_props: Props) {
   const { t } = useTranslation();
@@ -35,20 +41,29 @@ export function InsightsScreen(_props: Props) {
   const [costTrends, setCostTrends] = useState<CostTrendSeries[]>([]);
   const [ringSizes, setRingSizes] = useState<RingSizePopularity[]>([]);
   const [deadStock, setDeadStock] = useState<DeadStockRow[]>([]);
+  const [socialPlatform, setSocialPlatform] = useState<SocialPlatform>('instagram');
+  const [followerGrowth, setFollowerGrowth] = useState<FollowerGrowthPoint[]>([]);
+  const [postCorrelation, setPostCorrelation] = useState<PostSalesCorrelationRow[]>([]);
 
   const load = useCallback(async () => {
-    const [rev, markup, cost, sizes, dead] = await Promise.all([
+    const [rev, markup, cost, sizes, dead, correlation] = await Promise.all([
       getRevenueByMonth(6),
       getRealisedMarkupVsRuleTable(),
       getCostTrendsByMaterial(6),
       getRingSizePopularity(),
       getDeadStock(90),
+      getPostToSalesCorrelation(),
     ]);
     setRevenue(rev);
     setMarkupComparison(markup);
     setCostTrends(cost);
     setRingSizes(sizes);
     setDeadStock(dead);
+    setPostCorrelation(correlation);
+  }, []);
+
+  const loadFollowerGrowth = useCallback(async (platform: SocialPlatform) => {
+    setFollowerGrowth(await getFollowerGrowthVsSales(platform, 6));
   }, []);
 
   const loadBreakdown = useCallback(async (dimension: SalesBreakdownDimension) => {
@@ -59,6 +74,7 @@ export function InsightsScreen(_props: Props) {
     useCallback(() => {
       load();
       loadBreakdown(breakdownDimension);
+      loadFollowerGrowth(socialPlatform);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [load]),
   );
@@ -66,6 +82,11 @@ export function InsightsScreen(_props: Props) {
   function handleDimensionChange(dimension: SalesBreakdownDimension) {
     setBreakdownDimension(dimension);
     loadBreakdown(dimension);
+  }
+
+  function handleSocialPlatformChange(platform: SocialPlatform) {
+    setSocialPlatform(platform);
+    loadFollowerGrowth(platform);
   }
 
   return (
@@ -143,6 +164,46 @@ export function InsightsScreen(_props: Props) {
               </Text>
             </View>
             <Text style={styles.listRowValue}>{row.onHand}</Text>
+          </View>
+        ))
+      )}
+
+      <Text style={styles.sectionTitle}>{t('insights.followerGrowth')}</Text>
+      <View style={styles.chipRow}>
+        {SOCIAL_PLATFORMS.map((p) => (
+          <Pressable
+            key={p}
+            style={[styles.chip, socialPlatform === p && styles.chipActive]}
+            onPress={() => handleSocialPlatformChange(p)}
+          >
+            <Text style={[styles.chipText, socialPlatform === p && styles.chipTextActive]}>{t(`social.platform_${p}`)}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {followerGrowth.every((p) => p.followers === null) ? (
+        <Text style={styles.emptyText}>{t('insights.noFollowerData')}</Text>
+      ) : (
+        <>
+          <Text style={styles.subLabel}>{t('insights.followers')}</Text>
+          <BarChart data={followerGrowth.map((p) => ({ label: p.month, value: p.followers ?? 0 }))} valueFormatter={(v) => String(v)} />
+          <Text style={[styles.subLabel, { marginTop: 12 }]}>{t('insights.bookedRevenue')}</Text>
+          <BarChart data={followerGrowth.map((p) => ({ label: p.month, value: p.bookedCentimes }))} valueFormatter={formatMad} />
+        </>
+      )}
+
+      <Text style={styles.sectionTitle}>{t('insights.postToSales')}</Text>
+      {postCorrelation.length === 0 ? (
+        <Text style={styles.emptyText}>{t('insights.noPostsYet')}</Text>
+      ) : (
+        postCorrelation.map((row) => (
+          <View key={row.postId} style={styles.listRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.listRowLabel}>{row.pieceNames.join(', ')}</Text>
+              <Text style={styles.listRowSub}>
+                {t(`social.platform_${row.platform}`)} · {row.postedAt.slice(0, 10)}
+              </Text>
+            </View>
+            <Text style={styles.listRowValue}>{t('insights.unitsSoldAfter', { count: row.qtySoldAfter })}</Text>
           </View>
         ))
       )}

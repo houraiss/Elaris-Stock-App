@@ -17,6 +17,7 @@ const NAV_ITEMS: { key: keyof RootStackParamList; labelKey: string }[] = [
   { key: 'Balances', labelKey: 'home.balances' },
   { key: 'CustomOrders', labelKey: 'home.customOrders' },
   { key: 'Reservations', labelKey: 'home.reservations' },
+  { key: 'Social', labelKey: 'home.social' },
   { key: 'Insights', labelKey: 'home.insights' },
   { key: 'Settings', labelKey: 'home.settings' },
 ];

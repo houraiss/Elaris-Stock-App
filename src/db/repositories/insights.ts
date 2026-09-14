@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { sales } from '../schema/sales';
 import { saleItems } from '../schema/saleItems';
@@ -9,6 +9,7 @@ import { stockMovements } from '../schema/stockMovements';
 import { variants } from '../schema/variants';
 import { pieces } from '../schema/pieces';
 import { materials } from '../schema/materials';
+import { socialSnapshots, socialPosts, postPieces, type SocialPlatform } from '../schema/social';
 import { getStockLevels } from './stock';
 import { listActiveMarkupBands } from './markupRules';
 
@@ -486,4 +487,115 @@ export async function getDeadStock(daysThreshold = 90): Promise<DeadStockRow[]> 
     }
   }
   return result.sort((a, b) => (b.daysSinceLastSale ?? Infinity) - (a.daysSinceLastSale ?? Infinity));
+}
+
+// ---------------------------------------------------------------------------
+// Insights: follower growth vs. sales
+// ---------------------------------------------------------------------------
+
+export interface FollowerGrowthPoint {
+  month: string;
+  followers: number | null; // last known snapshot that month; carried forward when a month has no entry
+  bookedCentimes: number;
+}
+
+export async function getFollowerGrowthVsSales(platform: SocialPlatform, monthsBack = 6): Promise<FollowerGrowthPoint[]> {
+  const keys = lastNMonthKeys(monthsBack);
+  const earliestIso = new Date(`${keys[0]}-01T00:00:00.000Z`).toISOString();
+
+  const snapshotRows = await db
+    .select({ capturedOn: socialSnapshots.capturedOn, followers: socialSnapshots.followers })
+    .from(socialSnapshots)
+    .where(and(eq(socialSnapshots.platform, platform), gte(socialSnapshots.capturedOn, earliestIso)))
+    .orderBy(asc(socialSnapshots.capturedOn));
+
+  const lastFollowersByMonth = new Map<string, number>();
+  for (const row of snapshotRows) {
+    lastFollowersByMonth.set(monthKey(row.capturedOn), row.followers);
+  }
+
+  const bookedRows = await db.all<{ month: string; total: number }>(sql`
+    select strftime('%Y-%m', ${sales.occurredAt}) as month, coalesce(sum(${sales.totalCentimes}), 0) as total
+    from ${sales}
+    where ${sales.status} != 'cancelled' and ${sales.occurredAt} >= ${earliestIso}
+    group by month
+  `);
+  const bookedByMonth = new Map(bookedRows.map((r) => [r.month, r.total]));
+
+  let lastKnownFollowers: number | null = null;
+  return keys.map((key) => {
+    if (lastFollowersByMonth.has(key)) lastKnownFollowers = lastFollowersByMonth.get(key)!;
+    return {
+      month: monthLabel(key),
+      followers: lastKnownFollowers,
+      bookedCentimes: bookedByMonth.get(key) ?? 0,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Insights: post-to-sales correlation
+// ---------------------------------------------------------------------------
+
+export interface PostSalesCorrelationRow {
+  postId: string;
+  platform: SocialPlatform;
+  postedAt: string;
+  caption: string | null;
+  pieceNames: string[];
+  qtySoldAfter: number;
+}
+
+const CORRELATION_WINDOW_DAYS = 14;
+
+/** For each tagged post, how many units of its tagged pieces sold in the following 14 days. */
+export async function getPostToSalesCorrelation(limit = 20): Promise<PostSalesCorrelationRow[]> {
+  const taggedRows = await db
+    .select({ post: socialPosts, pieceId: postPieces.pieceId, pieceName: pieces.name })
+    .from(postPieces)
+    .innerJoin(socialPosts, eq(postPieces.postId, socialPosts.id))
+    .innerJoin(pieces, eq(postPieces.pieceId, pieces.id))
+    .orderBy(desc(socialPosts.postedAt));
+
+  if (taggedRows.length === 0) return [];
+
+  const byPost = new Map<string, { post: (typeof taggedRows)[number]['post']; pieceIds: string[]; pieceNames: string[] }>();
+  for (const row of taggedRows) {
+    const entry = byPost.get(row.post.id) ?? { post: row.post, pieceIds: [], pieceNames: [] };
+    if (!entry.pieceIds.includes(row.pieceId)) {
+      entry.pieceIds.push(row.pieceId);
+      entry.pieceNames.push(row.pieceName);
+    }
+    byPost.set(row.post.id, entry);
+  }
+
+  const posts = [...byPost.values()].sort((a, b) => (a.post.postedAt < b.post.postedAt ? 1 : -1)).slice(0, limit);
+
+  const results: PostSalesCorrelationRow[] = [];
+  for (const { post, pieceIds, pieceNames } of posts) {
+    const windowEnd = new Date(new Date(post.postedAt).getTime() + CORRELATION_WINDOW_DAYS * 86_400_000).toISOString();
+    const soldRows = await db
+      .select({ qty: saleItems.qty })
+      .from(saleItems)
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .innerJoin(variants, eq(saleItems.variantId, variants.id))
+      .where(
+        and(
+          NOT_CANCELLED,
+          gte(sales.occurredAt, post.postedAt),
+          lt(sales.occurredAt, windowEnd),
+          inArray(variants.pieceId, pieceIds),
+        ),
+      );
+    results.push({
+      postId: post.id,
+      platform: post.platform,
+      postedAt: post.postedAt,
+      caption: post.caption,
+      pieceNames,
+      qtySoldAfter: soldRows.reduce((sum, r) => sum + r.qty, 0),
+    });
+  }
+
+  return results;
 }
