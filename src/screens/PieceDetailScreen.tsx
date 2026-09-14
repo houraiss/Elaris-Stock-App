@@ -96,12 +96,12 @@ export function PieceDetailScreen({ route, navigation }: Props) {
           <Text style={styles.sectionTitle}>{t('pieceDetail.variants')}</Text>
         </View>
       }
-      renderItem={({ item }) => <VariantRow variant={item} />}
+      renderItem={({ item }) => <VariantRow variant={item} onReserved={load} />}
     />
   );
 }
 
-function VariantRow({ variant }: { variant: VariantWithStock }) {
+function VariantRow({ variant, onReserved }: { variant: VariantWithStock; onReserved: () => void }) {
   const { t } = useTranslation();
   const [holding, setHolding] = useState(false);
   const [customerQuery, setCustomerQuery] = useState('');
@@ -153,6 +153,7 @@ function VariantRow({ variant }: { variant: VariantWithStock }) {
       });
       Alert.alert(t('reservations.savedTitle'), t('reservations.savedBody', { name: variant.label, customer: selectedCustomer?.displayName ?? customerQuery.trim() }));
       setHolding(false);
+      onReserved();
     } catch (err) {
       Alert.alert(t('common.errorGeneric'), err instanceof Error ? err.message : String(err));
     } finally {
