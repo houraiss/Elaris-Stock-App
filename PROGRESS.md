@@ -182,10 +182,43 @@ from the phone's. It starts empty. Use Settings → "Restore from cloud"
 in the emulator to pull the same data that's been synced from the phone,
 if realistic data is needed for a test.
 
+## Emulator self-testing — Custom Orders & Reservations (DONE)
+
+Both flows fully self-tested end-to-end via the emulator, driving the UI
+myself with `adb` (tap coordinates read fresh from `uiautomator dump`
+each time — screenshots alone are unreliable for tap coordinates because
+scroll position shifts when the keyboard shows/hides).
+
+- **Custom orders**: created a test order, walked it through
+  quote → ordered → in_production → ready → deliver. Delivery correctly
+  created a one-off unique piece + variant, wrote opening 'purchase' and
+  closing 'sale' stock movements netting to zero, and re-parented the
+  deposit `customerPayments` row from the custom order onto the new sale.
+- **Reservations**: created piece "Test Bangle" (qty 5), tapped Hold for
+  customer "Khadija Test" qty 1 → found and fixed a real bug (below),
+  then verified Available dropped to 4 with a "Layaway — held" badge.
+  Tapped Release → verified the reservation disappeared from the list and
+  Available returned to 5, badge gone.
+
+**Bugs found and fixed this session:**
+1. `src/db/repositories/insights.ts` — Home dashboard's low-stock counter
+   was flagging sold-out `unique` pieces (e.g. a delivered custom order)
+   as low stock, which is meaningless since one-off pieces have no
+   restock concept. Fixed by filtering to `itemType === 'model'` variants
+   only. (commit `e19ff86`)
+2. `src/screens/PieceDetailScreen.tsx` — `VariantRow`'s hold-form success
+   handler never told the parent screen to reload, so Available stayed
+   stale after a successful Hold until the user manually navigated away
+   and back. Fixed with an `onReserved` callback wired to the parent's
+   `load()`. (commit `600faec`)
+
+Both fixes: `npx tsc --noEmit` clean, `npx jest --silent` 19/19 passing,
+committed and pushed.
+
 ## Immediate next step
 
-Emulator is verified working (Home dashboard renders correctly, screenshot
-confirmed). Next: self-test Custom Orders and Reservations (built but
-never live-tested) using the emulator, then continue per user direction —
-Phase 6 (manual social tracking) is the next unbuilt phase per the plan,
-but confirm with the user before assuming that's next.
+Custom Orders and Reservations are now fully verified. Everything in the
+implementation plan through Phase 5 + Phase 2 remainder is built and
+tested. Phase 6 (manual social tracking: weekly snapshots, post entry,
+piece tagging, growth vs. sales correlation) is the next unbuilt phase
+per the plan — **check with the user before starting it**, don't assume.
