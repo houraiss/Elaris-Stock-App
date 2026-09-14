@@ -9,4 +9,6 @@ export type RootStackParamList = {
   Balances: undefined;
   Settings: undefined;
   Insights: undefined;
+  CustomOrders: undefined;
+  Reservations: undefined;
 };

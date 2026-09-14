@@ -1,14 +1,17 @@
-import { useCallback, useState } from 'react';
-import { View, Text, FlatList, Image, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { View, Text, TextInput, FlatList, Image, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
-import { getPieceDetail, type PieceDetail } from '../db/repositories/pieces';
+import { getPieceDetail, type PieceDetail, type VariantWithStock } from '../db/repositories/pieces';
 import { addPhoto } from '../db/repositories/piecePhotos';
 import { capturePhoto } from '../media/capturePhoto';
+import { createReservation } from '../db/repositories/reservations';
+import { searchCustomers, createCustomer } from '../db/repositories/customers';
 import { formatMad } from '../utils/money';
 import { formatGrams } from '../utils/weight';
+import type { Customer } from '../db/schema/customers';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PieceDetail'>;
 
@@ -93,18 +96,121 @@ export function PieceDetailScreen({ route, navigation }: Props) {
           <Text style={styles.sectionTitle}>{t('pieceDetail.variants')}</Text>
         </View>
       }
-      renderItem={({ item }) => (
-        <View style={styles.variantRow}>
-          <Text style={styles.variantLabel}>{item.label}</Text>
-          <Text style={styles.variantMeta}>
-            {formatGrams(item.nominalWeightMg)} · {formatMad(item.priceCentimes)}
-          </Text>
-          <Text style={styles.variantStock}>
-            {t('stock.onHand')}: {item.stock.onHand} · {t('stock.available')}: {item.stock.available}
-          </Text>
-        </View>
-      )}
+      renderItem={({ item }) => <VariantRow variant={item} />}
     />
+  );
+}
+
+function VariantRow({ variant }: { variant: VariantWithStock }) {
+  const { t } = useTranslation();
+  const [holding, setHolding] = useState(false);
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [qty, setQty] = useState('1');
+  const [expiresOn, setExpiresOn] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (selectedCustomer || customerQuery.trim().length === 0) {
+      setSuggestions([]);
+      return;
+    }
+    const handle = setTimeout(async () => setSuggestions(await searchCustomers(customerQuery)), 300);
+    return () => clearTimeout(handle);
+  }, [customerQuery, selectedCustomer]);
+
+  function openHoldForm() {
+    setHolding(true);
+    setCustomerQuery('');
+    setSelectedCustomer(null);
+    setQty('1');
+    setExpiresOn('');
+  }
+
+  async function handleConfirmHold() {
+    const quantity = parseInt(qty, 10) || 0;
+    if (quantity <= 0) return;
+
+    setSaving(true);
+    try {
+      let customerId = selectedCustomer?.id ?? null;
+      if (!customerId) {
+        const name = customerQuery.trim();
+        if (!name) {
+          Alert.alert(t('common.errorGeneric'), t('sale.layawayNeedsCustomer'));
+          setSaving(false);
+          return;
+        }
+        customerId = (await createCustomer({ displayName: name })).id;
+      }
+
+      await createReservation({
+        variantId: variant.id,
+        customerId,
+        qty: quantity,
+        expiresAt: expiresOn.trim() ? new Date(expiresOn).toISOString() : null,
+      });
+      Alert.alert(t('reservations.savedTitle'), t('reservations.savedBody', { name: variant.label, customer: selectedCustomer?.displayName ?? customerQuery.trim() }));
+      setHolding(false);
+    } catch (err) {
+      Alert.alert(t('common.errorGeneric'), err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <View style={styles.variantRow}>
+      <Text style={styles.variantLabel}>{variant.label}</Text>
+      <Text style={styles.variantMeta}>
+        {formatGrams(variant.nominalWeightMg)} · {formatMad(variant.priceCentimes)}
+      </Text>
+      <Text style={styles.variantStock}>
+        {t('stock.onHand')}: {variant.stock.onHand} · {t('stock.available')}: {variant.stock.available}
+      </Text>
+
+      {holding ? (
+        <View style={{ gap: 8, marginTop: 8 }}>
+          <TextInput
+            style={styles.input}
+            value={selectedCustomer ? selectedCustomer.displayName : customerQuery}
+            onChangeText={(text) => {
+              setSelectedCustomer(null);
+              setCustomerQuery(text);
+            }}
+            placeholder={t('sale.customerPlaceholder')}
+          />
+          {suggestions.length > 0 && (
+            <View style={styles.suggestionBox}>
+              {suggestions.map((c) => (
+                <Pressable key={c.id} style={styles.searchRow} onPress={() => { setSelectedCustomer(c); setCustomerQuery(c.displayName); setSuggestions([]); }}>
+                  <Text>{c.displayName}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TextInput style={[styles.input, { flex: 1 }]} value={qty} onChangeText={setQty} keyboardType="number-pad" placeholder={t('reservations.holdQty')} />
+            <TextInput style={[styles.input, { flex: 2 }]} value={expiresOn} onChangeText={setExpiresOn} placeholder="YYYY-MM-DD" />
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <Pressable style={styles.smallButton} onPress={() => setHolding(false)} disabled={saving}>
+              <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
+            </Pressable>
+            <Pressable style={styles.smallButton} onPress={handleConfirmHold} disabled={saving}>
+              {saving ? <ActivityIndicator /> : <Text style={styles.smallButtonText}>{t('reservations.hold')}</Text>}
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        variant.stock.available > 0 && (
+          <Pressable style={styles.smallButton} onPress={openHoldForm}>
+            <Text style={styles.smallButtonText}>{t('reservations.hold')}</Text>
+          </Pressable>
+        )
+      )}
+    </View>
   );
 }
 
@@ -127,4 +233,7 @@ const styles = StyleSheet.create({
   variantLabel: { fontSize: 16, fontWeight: '600' },
   variantMeta: { color: '#666', fontSize: 13 },
   variantStock: { color: '#333', fontSize: 13, marginTop: 2 },
+  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+  suggestionBox: { borderWidth: 1, borderColor: '#eee', borderRadius: 8, paddingHorizontal: 10 },
+  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
 });
