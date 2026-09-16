@@ -1,0 +1,1 @@
+ALTER TABLE `materials` ADD `plating` text DEFAULT 'none' NOT NULL;

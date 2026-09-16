@@ -16,6 +16,7 @@ import { getStockLevel, type StockLevel } from './stock';
 
 export interface PieceSearchResult extends Piece {
   materialName: string;
+  materialCode: string;
 }
 
 /** For attaching a new size/variant to an existing piece (e.g. restocking a ring in a new size). */
@@ -24,37 +25,38 @@ export async function searchPieces(query: string): Promise<PieceSearchResult[]> 
   if (term.length === 0) return [];
 
   const rows = await db
-    .select({ piece: pieces, materialName: materials.name })
+    .select({ piece: pieces, materialName: materials.name, materialCode: materials.code })
     .from(pieces)
     .innerJoin(materials, eq(pieces.materialId, materials.id))
     .where(and(eq(pieces.isActive, true), like(pieces.name, `%${term}%`)))
     .limit(15);
 
-  return rows.map((r) => ({ ...r.piece, materialName: r.materialName }));
+  return rows.map((r) => ({ ...r.piece, materialName: r.materialName, materialCode: r.materialCode }));
 }
 
 /** For resolving a Tier 2 visual-match result (a piece id) back into a selectable result. */
 export async function getPieceSearchResultById(id: string): Promise<PieceSearchResult | null> {
   const [row] = await db
-    .select({ piece: pieces, materialName: materials.name })
+    .select({ piece: pieces, materialName: materials.name, materialCode: materials.code })
     .from(pieces)
     .innerJoin(materials, eq(pieces.materialId, materials.id))
     .where(eq(pieces.id, id));
   if (!row) return null;
-  return { ...row.piece, materialName: row.materialName };
+  return { ...row.piece, materialName: row.materialName, materialCode: row.materialCode };
 }
 
 export interface MatchedVariant {
   variant: Variant;
   piece: Piece;
   materialName: string;
+  materialCode: string;
   stock: StockLevel;
 }
 
 /** Tier 1 scan resolution: an exact barcode match against the catalogue. */
 export async function findVariantByBarcode(barcode: string): Promise<MatchedVariant | null> {
   const [row] = await db
-    .select({ variant: variants, piece: pieces, materialName: materials.name })
+    .select({ variant: variants, piece: pieces, materialName: materials.name, materialCode: materials.code })
     .from(variants)
     .innerJoin(pieces, eq(variants.pieceId, pieces.id))
     .innerJoin(materials, eq(pieces.materialId, materials.id))
@@ -63,7 +65,7 @@ export async function findVariantByBarcode(barcode: string): Promise<MatchedVari
   if (!row) return null;
 
   const stock = await getStockLevel(row.variant.id);
-  return { variant: row.variant, piece: row.piece, materialName: row.materialName, stock };
+  return { variant: row.variant, piece: row.piece, materialName: row.materialName, materialCode: row.materialCode, stock };
 }
 
 /** Manual-mode fallback for restocking without a scan: search by piece name or SKU/barcode. */
@@ -72,7 +74,7 @@ export async function searchVariantsForRestock(query: string): Promise<MatchedVa
   if (query.trim().length === 0) return [];
 
   const rows = await db
-    .select({ variant: variants, piece: pieces, materialName: materials.name })
+    .select({ variant: variants, piece: pieces, materialName: materials.name, materialCode: materials.code })
     .from(variants)
     .innerJoin(pieces, eq(variants.pieceId, pieces.id))
     .innerJoin(materials, eq(pieces.materialId, materials.id))
@@ -82,7 +84,7 @@ export async function searchVariantsForRestock(query: string): Promise<MatchedVa
   const results: MatchedVariant[] = [];
   for (const row of rows) {
     const stock = await getStockLevel(row.variant.id);
-    results.push({ variant: row.variant, piece: row.piece, materialName: row.materialName, stock });
+    results.push({ variant: row.variant, piece: row.piece, materialName: row.materialName, materialCode: row.materialCode, stock });
   }
   return results;
 }

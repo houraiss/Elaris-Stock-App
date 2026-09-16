@@ -245,7 +245,10 @@ export async function getRevenueByMonth(monthsBack = 6): Promise<MonthlyRevenue[
 // ---------------------------------------------------------------------------
 
 export interface MarkupComparison {
-  label: string; // "All materials · 5–10 g" etc.
+  materialCode: string | null; // null = the generic "all materials" band
+  materialName: string | null;
+  minWeightMg: number;
+  maxWeightMg: number;
   ruleBps: number;
   realisedBps: number;
   itemCount: number;
@@ -294,9 +297,10 @@ export async function getRealisedMarkupVsRuleTable(): Promise<MarkupComparison[]
       const entry = totals.get(band.key);
       const realisedBps = entry && entry.cost > 0 ? Math.round((entry.margin / entry.cost) * 10_000) : 0;
       return {
-        label: `${band.materialName ?? 'All materials'} · ${Math.round(band.minWeightMg / 1000)}–${
-          band.maxWeightMg >= Number.MAX_SAFE_INTEGER / 2 ? '∞' : Math.round(band.maxWeightMg / 1000)
-        } g`,
+        materialCode: band.materialCode,
+        materialName: band.materialName,
+        minWeightMg: band.minWeightMg,
+        maxWeightMg: band.maxWeightMg,
         ruleBps: band.active.markupBps,
         realisedBps,
         itemCount: entry?.count ?? 0,
@@ -313,6 +317,7 @@ export type SalesBreakdownDimension = 'material' | 'category' | 'channel';
 
 export interface SalesBreakdownRow {
   label: string;
+  code: string | null; // material code, for i18n lookup — set only for the 'material' dimension
   totalCentimes: number;
   qty: number;
 }
@@ -330,13 +335,14 @@ export async function getSalesBreakdown(dimension: SalesBreakdownDimension): Pro
       .where(NOT_CANCELLED)
       .groupBy(sales.channel)
       .orderBy(desc(sql`sum(${saleItems.unitPriceCentimes} * ${saleItems.qty})`));
-    return rows;
+    return rows.map((r) => ({ ...r, code: null }));
   }
 
-  const groupCol = dimension === 'material' ? materials.name : pieces.category;
+  const groupCol = dimension === 'material' ? materials.code : pieces.category;
   const rows = await db
     .select({
-      label: groupCol,
+      label: dimension === 'material' ? materials.name : pieces.category,
+      code: dimension === 'material' ? materials.code : sql<null>`NULL`,
       totalCentimes: sql<number>`coalesce(sum(${saleItems.unitPriceCentimes} * ${saleItems.qty}), 0)`,
       qty: sql<number>`coalesce(sum(${saleItems.qty}), 0)`,
     })
@@ -357,6 +363,7 @@ export async function getSalesBreakdown(dimension: SalesBreakdownDimension): Pro
 
 export interface CostTrendSeries {
   materialName: string;
+  materialCode: string;
   points: { month: string; avgCostPerGramCentimes: number }[];
 }
 
@@ -367,6 +374,7 @@ export async function getCostTrendsByMaterial(monthsBack = 6): Promise<CostTrend
   const rows = await db
     .select({
       materialName: materials.name,
+      materialCode: materials.code,
       occurredAt: stockMovements.occurredAt,
       weightMg: stockMovements.weightMg,
       unitCostCentimes: stockMovements.unitCostCentimes,
@@ -378,23 +386,24 @@ export async function getCostTrendsByMaterial(monthsBack = 6): Promise<CostTrend
     .innerJoin(materials, eq(pieces.materialId, materials.id))
     .where(and(eq(stockMovements.type, 'purchase'), gte(stockMovements.occurredAt, earliestIso)));
 
-  const byMaterial = new Map<string, Map<string, { costGramSum: number; count: number }>>();
+  const byMaterial = new Map<string, { name: string; points: Map<string, { costGramSum: number; count: number }> }>();
   for (const row of rows) {
     if (!row.weightMg || row.weightMg <= 0 || row.qtyDelta <= 0) continue;
     const costPerGram = row.unitCostCentimes / (row.weightMg / row.qtyDelta / 1000);
     const key = monthKey(row.occurredAt);
-    const materialMap = byMaterial.get(row.materialName) ?? new Map();
-    const point = materialMap.get(key) ?? { costGramSum: 0, count: 0 };
+    const entry = byMaterial.get(row.materialCode) ?? { name: row.materialName, points: new Map() };
+    const point = entry.points.get(key) ?? { costGramSum: 0, count: 0 };
     point.costGramSum += costPerGram;
     point.count += 1;
-    materialMap.set(key, point);
-    byMaterial.set(row.materialName, materialMap);
+    entry.points.set(key, point);
+    byMaterial.set(row.materialCode, entry);
   }
 
   const series: CostTrendSeries[] = [];
-  for (const [materialName, materialMap] of byMaterial) {
+  for (const [materialCode, { name: materialName, points: materialMap }] of byMaterial) {
     series.push({
       materialName,
+      materialCode,
       points: keys.map((key) => {
         const point = materialMap.get(key);
         return {

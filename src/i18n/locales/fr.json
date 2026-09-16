@@ -6,6 +6,7 @@
     "loading": "Chargement…",
     "errorGeneric": "Une erreur est survenue",
     "add": "Ajouter",
+    "edit": "Modifier",
     "delete": "Supprimer",
     "camera": "Appareil photo",
     "gallery": "Galerie",
@@ -36,7 +37,26 @@
     "recentActivity": "Activité récente",
     "noActivityYet": "Rien d'enregistré pour l'instant",
     "activity_sale": "Vente",
-    "activity_purchase": "Achat"
+    "activity_purchase": "Achat",
+    "greetingMorning": "Bonjour",
+    "greetingAfternoon": "Bon après-midi",
+    "greetingEvening": "Bonsoir",
+    "greetingNight": "Bonne nuit",
+    "quickActions": "Actions rapides",
+    "overview": "Aperçu",
+    "silverSpotTitle": "Cours de l'argent",
+    "perGram": "par gramme",
+    "silverUpdatedNow": "Mis à jour à l'instant",
+    "silverUpdatedMinutes_one": "Mis à jour il y a {{count}} minute",
+    "silverUpdatedMinutes_other": "Mis à jour il y a {{count}} minutes",
+    "silverUpdatedHours_one": "Mis à jour il y a {{count}} heure",
+    "silverUpdatedHours_other": "Mis à jour il y a {{count}} heures",
+    "silverUnavailable": "Prix indisponible — vérifiez votre connexion",
+    "silverDisclaimer": "Cours de référence, converti en MAD. Les tarifs réels des revendeurs peuvent varier.",
+    "editLayout": "Modifier la disposition",
+    "layoutEditHint": "Réorganisez les sections de votre tableau de bord",
+    "resetLayout": "Réinitialiser",
+    "doneEditingLayout": "Terminé"
   },
   "stock": {
     "title": "Stock",
@@ -46,7 +66,12 @@
     "available": "Disponible",
     "unique": "Pièce unique",
     "variants_one": "{{count}} variante",
-    "variants_other": "{{count}} variantes"
+    "variants_other": "{{count}} variantes",
+    "searchPlaceholder": "Rechercher par nom",
+    "filterByMaterial": "Matière",
+    "filterByCategory": "Catégorie",
+    "noMatches": "Aucune pièce ne correspond à votre recherche ou vos filtres",
+    "clearFilters": "Réinitialiser les filtres"
   },
   "piece": {
     "addTitle": "Ajouter une pièce",
@@ -76,6 +101,13 @@
     "notes": "Notes",
     "validationError": "Veuillez renseigner le nom, la catégorie et le poids/coût de chaque variante",
     "saveError": "Impossible d'enregistrer cette pièce"
+  },
+  "material": {
+    "argent_925": "Argent 925",
+    "argent_rhodie_925": "Rhodié",
+    "argent_800": "Argent 800",
+    "argent_800_chrome": "Argent chromé",
+    "argent_800_dore": "Argent doré"
   },
   "pieceDetail": {
     "variants": "Variantes",
@@ -207,6 +239,13 @@
     "language_en": "English",
     "language_fr": "Français",
     "language_ar": "العربية",
+    "appearance": "Apparence",
+    "appearanceLight": "Clair",
+    "appearanceDark": "Sombre",
+    "appearanceSystem": "Système",
+    "visualStyle": "Style",
+    "visualStyleStandard": "Standard",
+    "visualStyleLiquidGlass": "Liquid Glass",
     "restartTitle": "Redémarrage nécessaire",
     "restartBody": "La mise en page de droite à gauche ne s'applique qu'après un redémarrage.",
     "restartNow": "Redémarrer maintenant",
@@ -239,7 +278,11 @@
     "restoreNow": "Restaurer depuis le cloud",
     "restoreDoneTitle": "Restauré",
     "restoreDoneBody": "Vos données sont de retour, dont {{photos}} photos",
-    "restoreError": "Échec de la restauration"
+    "restoreError": "Échec de la restauration",
+    "aboutElaris": "À propos d'Elaris",
+    "aboutTagline": "Jewelry • Store",
+    "followOnInstagram": "Suivre sur Instagram",
+    "instagramUnavailable": "Impossible d'ouvrir Instagram"
   },
   "insights": {
     "title": "Analyses",

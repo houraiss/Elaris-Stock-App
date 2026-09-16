@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { listActiveMaterials } from '../db/repositories/materials';
@@ -27,6 +28,7 @@ import {
   type PieceSearchResult,
 } from '../db/repositories/stockIntake';
 import { addPhoto } from '../db/repositories/piecePhotos';
+import { getMaterialDisplayName } from '../i18n/materialName';
 import { capturePhoto } from '../media/capturePhoto';
 import {
   isVisionAvailable,
@@ -43,6 +45,15 @@ import { gramsToMg } from '../utils/weight';
 import { RING_SIZE_PRESETS } from '../catalogue/ringSizes';
 import type { Material } from '../db/schema/materials';
 import type { ItemType, VariantType } from '../db/schema/pieces';
+import { SectionHeader } from '../components/SectionHeader';
+import { Chip } from '../components/Chip';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { Badge } from '../components/Badge';
+import { SegmentedControl } from '../components/SegmentedControl';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import type { Colors } from '../theme/palettes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StockIntake'>;
 
@@ -63,6 +74,8 @@ const VARIANT_TYPES: VariantType[] = ['none', 'ring_size', 'length'];
 
 export function StockIntakeScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [mode, setMode] = useState<IntakeMode>('scan');
   const [resolution, setResolution] = useState<Resolution>({ kind: 'none' });
   const [permission, requestPermission] = useCameraPermissions();
@@ -88,44 +101,23 @@ export function StockIntakeScreen({ navigation }: Props) {
     setScanLocked(false);
   }
 
+  const modeOptions: { value: IntakeMode; label: string; icon: 'scan-outline' | 'camera-outline' | 'search-outline' }[] = [
+    { value: 'scan', label: t('stockIntake.scan'), icon: 'scan-outline' },
+    ...(isVisionAvailable ? ([{ value: 'photoMatch', label: t('stockIntake.photoMatch'), icon: 'camera-outline' }] as const) : []),
+    { value: 'manual', label: t('stockIntake.manual'), icon: 'search-outline' },
+  ];
+
   return (
     <View style={styles.container}>
       <View style={styles.modeRow}>
-        <Pressable
-          style={[styles.modeButton, mode === 'scan' && styles.modeButtonActive]}
-          onPress={() => {
-            setMode('scan');
+        <SegmentedControl
+          value={mode}
+          onChange={(m) => {
+            setMode(m);
             reset();
           }}
-        >
-          <Text style={[styles.modeButtonText, mode === 'scan' && styles.modeButtonTextActive]}>
-            {t('stockIntake.scan')}
-          </Text>
-        </Pressable>
-        {isVisionAvailable && (
-          <Pressable
-            style={[styles.modeButton, mode === 'photoMatch' && styles.modeButtonActive]}
-            onPress={() => {
-              setMode('photoMatch');
-              reset();
-            }}
-          >
-            <Text style={[styles.modeButtonText, mode === 'photoMatch' && styles.modeButtonTextActive]}>
-              {t('stockIntake.photoMatch')}
-            </Text>
-          </Pressable>
-        )}
-        <Pressable
-          style={[styles.modeButton, mode === 'manual' && styles.modeButtonActive]}
-          onPress={() => {
-            setMode('manual');
-            reset();
-          }}
-        >
-          <Text style={[styles.modeButtonText, mode === 'manual' && styles.modeButtonTextActive]}>
-            {t('stockIntake.manual')}
-          </Text>
-        </Pressable>
+          options={modeOptions}
+        />
       </View>
 
       {resolution.kind === 'matched' && (
@@ -145,13 +137,12 @@ export function StockIntakeScreen({ navigation }: Props) {
       {resolution.kind === 'none' && mode === 'scan' && (
         <View style={styles.scanArea}>
           {!permission ? (
-            <ActivityIndicator />
+            <ActivityIndicator color={colors.ink} />
           ) : !permission.granted ? (
             <View style={styles.permissionBox}>
+              <Ionicons name="camera-outline" size={32} color={colors.inkMuted} />
               <Text style={styles.permissionText}>{t('stockIntake.cameraPermission')}</Text>
-              <Pressable style={styles.smallButton} onPress={() => requestPermission()}>
-                <Text style={styles.smallButtonText}>{t('stockIntake.grantPermission')}</Text>
-              </Pressable>
+              <Button label={t('stockIntake.grantPermission')} icon="camera" onPress={() => requestPermission()} />
             </View>
           ) : (
             <View style={styles.camera}>
@@ -200,6 +191,8 @@ function RestockPanel({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [quantity, setQuantity] = useState('1');
   const [costMad, setCostMad] = useState(String(centimesToMad(match.variant.costCentimes)));
   const [priceMad, setPriceMad] = useState(String(centimesToMad(match.variant.priceCentimes)));
@@ -227,12 +220,10 @@ function RestockPanel({
 
   return (
     <ScrollView contentContainerStyle={styles.panel} keyboardShouldPersistTaps="handled">
-      <View style={styles.matchBadge}>
-        <Text style={styles.matchBadgeText}>{t('stockIntake.matched')}</Text>
-      </View>
+      <Badge label={t('stockIntake.matched')} tone="success" icon="checkmark-circle-outline" />
       <Text style={styles.pieceName}>{match.piece.name}</Text>
       <Text style={styles.pieceSubtitle}>
-        {match.materialName} · {match.variant.label}
+        {getMaterialDisplayName(match.materialCode, match.materialName, t)} · {match.variant.label}
       </Text>
       <Text style={styles.pieceSubtitle}>
         {t('stockIntake.currentOnHand')}: {match.stock.onHand}
@@ -248,12 +239,8 @@ function RestockPanel({
       <TextInput style={styles.input} value={priceMad} onChangeText={setPriceMad} keyboardType="decimal-pad" />
 
       <View style={styles.actionRow}>
-        <Pressable style={styles.secondaryButton} onPress={onCancel} disabled={saving}>
-          <Text style={styles.secondaryButtonText}>{t('common.cancel')}</Text>
-        </Pressable>
-        <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('stockIntake.addStock')}</Text>}
-        </Pressable>
+        <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} disabled={saving} style={{ flex: 1 }} />
+        <Button label={t('stockIntake.addStock')} variant="primary" icon="add-circle" onPress={handleSave} loading={saving} style={{ flex: 2 }} />
       </View>
     </ScrollView>
   );
@@ -267,6 +254,8 @@ function ManualSearchPanel({
   onCreateNew: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<MatchedVariant[]>([]);
   const [searching, setSearching] = useState(false);
@@ -293,21 +282,21 @@ function ManualSearchPanel({
         value={query}
         onChangeText={setQuery}
         placeholder={t('stockIntake.searchPlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
-      {searching && <ActivityIndicator style={{ marginTop: 8 }} />}
-      <ScrollView style={{ marginTop: 8 }}>
+      {searching && <ActivityIndicator color={colors.ink} style={{ marginTop: spacing.sm }} />}
+      <ScrollView style={{ marginTop: spacing.sm }}>
         {results.map((r) => (
           <Pressable key={r.variant.id} style={styles.searchRow} onPress={() => onMatch(r)}>
             <Text style={styles.rowTitle}>{r.piece.name}</Text>
             <Text style={styles.pieceSubtitle}>
-              {r.materialName} · {r.variant.label} · {t('stockIntake.currentOnHand')}: {r.stock.onHand}
+              {getMaterialDisplayName(r.materialCode, r.materialName, t)} · {r.variant.label} ·{' '}
+              {t('stockIntake.currentOnHand')}: {r.stock.onHand}
             </Text>
           </Pressable>
         ))}
       </ScrollView>
-      <Pressable style={styles.smallButton} onPress={onCreateNew}>
-        <Text style={styles.smallButtonText}>{t('stockIntake.createNew')}</Text>
-      </Pressable>
+      <Button label={t('stockIntake.createNew')} icon="add" size="sm" onPress={onCreateNew} style={styles.spacedTop} />
     </View>
   );
 }
@@ -322,6 +311,8 @@ function PhotoMatchPanel({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [matches, setMatches] = useState<(VisualMatch & { label: string })[] | null>(null);
@@ -355,13 +346,9 @@ function PhotoMatchPanel({
 
   return (
     <View style={styles.panel}>
-      {!photoUri && (
-        <Pressable style={styles.smallButton} onPress={handleTakePhoto}>
-          <Text style={styles.smallButtonText}>{t('stockIntake.takePhoto')}</Text>
-        </Pressable>
-      )}
+      {!photoUri && <Button label={t('stockIntake.takePhoto')} icon="camera" onPress={handleTakePhoto} />}
       {photoUri && <Image source={{ uri: photoUri }} style={styles.matchPhoto} />}
-      {loading && <ActivityIndicator style={{ marginTop: 12 }} />}
+      {loading && <ActivityIndicator color={colors.ink} style={{ marginTop: spacing.md }} />}
 
       {matches && matches.length === 0 && (
         <Text style={styles.emptyText}>{t('stockIntake.noVisualMatches')}</Text>
@@ -376,18 +363,12 @@ function PhotoMatchPanel({
       ))}
 
       {photoUri && !loading && (
-        <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
-          <Pressable style={styles.smallButton} onPress={handleTakePhoto}>
-            <Text style={styles.smallButtonText}>{t('stockIntake.retakePhoto')}</Text>
-          </Pressable>
-          <Pressable style={styles.smallButton} onPress={() => onCreateNew(photoUri)}>
-            <Text style={styles.smallButtonText}>{t('stockIntake.noneOfThese')}</Text>
-          </Pressable>
+        <View style={styles.inlineButtonRow}>
+          <Button label={t('stockIntake.retakePhoto')} icon="camera-reverse-outline" size="sm" onPress={handleTakePhoto} />
+          <Button label={t('stockIntake.noneOfThese')} icon="add" size="sm" onPress={() => onCreateNew(photoUri)} />
         </View>
       )}
-      <Pressable style={styles.smallButton} onPress={onCancel}>
-        <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-      </Pressable>
+      <Button label={t('common.cancel')} variant="secondary" size="sm" onPress={onCancel} style={styles.spacedTop} />
     </View>
   );
 }
@@ -406,6 +387,8 @@ function PieceLookupPanel({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [nameQuery, setNameQuery] = useState('');
   const [suggestions, setSuggestions] = useState<PieceSearchResult[]>([]);
@@ -570,17 +553,13 @@ function PieceLookupPanel({
 
   return (
     <ScrollView contentContainerStyle={styles.panel} keyboardShouldPersistTaps="handled">
-      {barcode && (
-        <View style={styles.matchBadge}>
-          <Text style={styles.matchBadgeText}>{t('stockIntake.newBarcode', { code: barcode })}</Text>
-        </View>
-      )}
+      {barcode && <Badge label={t('stockIntake.newBarcode', { code: barcode })} tone="success" icon="barcode-outline" />}
       {capturedPhotoUri && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+        <View style={styles.photoPreviewRow}>
           <Image source={{ uri: capturedPhotoUri }} style={styles.matchPhotoSmall} />
           {describingPhoto && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <ActivityIndicator />
+            <View style={styles.describingRow}>
+              <ActivityIndicator color={colors.ink} />
               <Text style={styles.pieceSubtitle}>{t('stockIntake.describingPhoto')}</Text>
             </View>
           )}
@@ -596,6 +575,7 @@ function PieceLookupPanel({
           if (selectedPiece) clearSelection();
         }}
         placeholder={t('piece.namePlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
       {suggestions.length > 0 && (
         <View style={styles.suggestionBox}>
@@ -603,14 +583,18 @@ function PieceLookupPanel({
             <Pressable key={s.id} style={styles.searchRow} onPress={() => selectSuggestion(s)}>
               <Text style={styles.rowTitle}>{s.name}</Text>
               <Text style={styles.pieceSubtitle}>
-                {s.materialName} · {t(`piece.itemType${s.itemType === 'model' ? 'Model' : 'Unique'}`)}
+                {getMaterialDisplayName(s.materialCode, s.materialName, t)} ·{' '}
+                {t(`piece.itemType${s.itemType === 'model' ? 'Model' : 'Unique'}`)}
               </Text>
             </Pressable>
           ))}
         </View>
       )}
       {selectedPiece && (
-        <Text style={styles.hintText}>{t('stockIntake.attachingToExisting')}</Text>
+        <View style={styles.hintRow}>
+          <Ionicons name="information-circle" size={14} color={colors.success} />
+          <Text style={styles.hintText}>{t('stockIntake.attachingToExisting')}</Text>
+        </View>
       )}
 
       <Text style={styles.label}>{t('piece.category')}</Text>
@@ -620,52 +604,43 @@ function PieceLookupPanel({
         onChangeText={setCategory}
         editable={!selectedPiece}
         placeholder={t('piece.categoryPlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
 
       <Text style={styles.label}>{t('piece.material')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroller}>
         {materials.map((m) => (
-          <Pressable
+          <Chip
             key={m.id}
+            label={getMaterialDisplayName(m.code, m.name, t)}
+            active={materialId === m.id}
             onPress={() => !selectedPiece && setMaterialId(m.id)}
-            style={[styles.chip, materialId === m.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, materialId === m.id && styles.chipTextActive]}>{m.name}</Text>
-          </Pressable>
+          />
         ))}
       </ScrollView>
 
       {!selectedPiece && (
         <>
           <Text style={styles.label}>{t('piece.itemType')}</Text>
-          <View style={styles.toggleRow}>
-            {ITEM_TYPES.map((type) => (
-              <Pressable
-                key={type}
-                onPress={() => setItemType(type)}
-                style={[styles.toggle, itemType === type && styles.toggleActive]}
-              >
-                <Text style={[styles.toggleText, itemType === type && styles.toggleTextActive]}>
-                  {t(`piece.itemType${type === 'model' ? 'Model' : 'Unique'}`)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <SegmentedControl
+            value={itemType}
+            onChange={setItemType}
+            options={ITEM_TYPES.map((type) => ({
+              value: type,
+              label: t(`piece.itemType${type === 'model' ? 'Model' : 'Unique'}`),
+              icon: type === 'model' ? 'copy-outline' : 'sparkles-outline',
+            }))}
+          />
 
           <Text style={styles.label}>{t('piece.variantType')}</Text>
-          <View style={styles.toggleRow}>
-            {VARIANT_TYPES.map((type) => (
-              <Pressable
-                key={type}
-                onPress={() => setVariantType(type)}
-                style={[styles.toggle, variantType === type && styles.toggleActive]}
-              >
-                <Text style={[styles.toggleText, variantType === type && styles.toggleTextActive]}>
-                  {t(`piece.variantType${type === 'none' ? 'None' : type === 'ring_size' ? 'RingSize' : 'Length'}`)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <SegmentedControl
+            value={variantType}
+            onChange={setVariantType}
+            options={VARIANT_TYPES.map((type) => ({
+              value: type,
+              label: t(`piece.variantType${type === 'none' ? 'None' : type === 'ring_size' ? 'RingSize' : 'Length'}`),
+            }))}
+          />
         </>
       )}
 
@@ -675,28 +650,22 @@ function PieceLookupPanel({
           {variantType === 'ring_size' && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroller}>
               {RING_SIZE_PRESETS.map((size) => (
-                <Pressable
-                  key={size}
-                  onPress={() => setLabel(size)}
-                  style={[styles.chip, label === size && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, label === size && styles.chipTextActive]}>{size}</Text>
-                </Pressable>
+                <Chip key={size} label={size} active={label === size} onPress={() => setLabel(size)} />
               ))}
             </ScrollView>
           )}
-          <TextInput style={styles.input} value={label} onChangeText={setLabel} placeholder={t('piece.variantLabel')} />
+          <TextInput style={styles.input} value={label} onChangeText={setLabel} placeholder={t('piece.variantLabel')} placeholderTextColor={colors.inkMuted} />
         </>
       )}
 
       <View style={styles.variantFieldsRow}>
         <View style={styles.variantField}>
           <Text style={styles.smallLabel}>{t('piece.weightGrams')}</Text>
-          <TextInput style={styles.input} value={weightGrams} onChangeText={setWeightGrams} keyboardType="decimal-pad" placeholder="0" />
+          <TextInput style={styles.input} value={weightGrams} onChangeText={setWeightGrams} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.inkMuted} />
         </View>
         <View style={styles.variantField}>
           <Text style={styles.smallLabel}>{t('piece.costMad')}</Text>
-          <TextInput style={styles.input} value={costMad} onChangeText={setCostMad} keyboardType="decimal-pad" placeholder="0" />
+          <TextInput style={styles.input} value={costMad} onChangeText={setCostMad} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.inkMuted} />
         </View>
       </View>
       <View style={styles.variantFieldsRow}>
@@ -711,6 +680,7 @@ function PieceLookupPanel({
             }}
             keyboardType="decimal-pad"
             placeholder="0"
+            placeholderTextColor={colors.inkMuted}
           />
         </View>
         <View style={styles.variantField}>
@@ -720,77 +690,59 @@ function PieceLookupPanel({
       </View>
 
       <View style={styles.actionRow}>
-        <Pressable style={styles.secondaryButton} onPress={onCancel} disabled={saving}>
-          <Text style={styles.secondaryButtonText}>{t('common.cancel')}</Text>
-        </Pressable>
-        <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('common.save')}</Text>}
-        </Pressable>
+        <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} disabled={saving} style={{ flex: 1 }} />
+        <Button label={t('common.save')} icon="checkmark" variant="primary" onPress={handleSave} loading={saving} style={{ flex: 2 }} />
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  modeRow: { flexDirection: 'row', padding: 12, gap: 8 },
-  modeButton: { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#f0f0f0', alignItems: 'center' },
-  modeButtonActive: { backgroundColor: '#1a1a1a' },
-  modeButtonText: { color: '#333', fontWeight: '600' },
-  modeButtonTextActive: { color: '#fff' },
-  scanArea: { flex: 1, paddingHorizontal: 12, paddingBottom: 12 },
-  matchPhoto: { width: '100%', height: 220, borderRadius: 12, backgroundColor: '#eee', marginTop: 8 },
-  matchPhotoSmall: { width: 56, height: 56, borderRadius: 8, backgroundColor: '#eee' },
-  emptyText: { color: '#888', marginTop: 8 },
-  camera: { flex: 1, borderRadius: 12, overflow: 'hidden' },
+const makeStyles = (colors: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  modeRow: { padding: spacing.md },
+  scanArea: { flex: 1, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
+  matchPhoto: { width: '100%', height: 220, borderRadius: radius.lg, backgroundColor: colors.surfaceAlt, marginTop: spacing.sm },
+  matchPhotoSmall: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
+  emptyText: { color: colors.inkMuted, marginTop: spacing.sm },
+  camera: { flex: 1, borderRadius: radius.lg, overflow: 'hidden' },
   scanOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scanFrame: {
     width: 220,
     height: 220,
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.85)',
-    borderRadius: 16,
+    borderRadius: radius.lg,
   },
   scanHint: { color: '#fff', marginTop: 16, fontSize: 14, backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  permissionBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  permissionText: { textAlign: 'center', color: '#555', paddingHorizontal: 24 },
-  panel: { padding: 16, gap: 4 },
-  matchBadge: { alignSelf: 'flex-start', backgroundColor: '#dcfce7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8 },
-  matchBadgeText: { color: '#166534', fontWeight: '600', fontSize: 12 },
-  pieceName: { fontSize: 20, fontWeight: '700' },
-  pieceSubtitle: { color: '#666', fontSize: 13, marginBottom: 8 },
-  rowTitle: { fontSize: 15, fontWeight: '600' },
-  hintText: { color: '#166534', fontSize: 12, marginTop: 4, marginBottom: 4 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 14, marginBottom: 6, color: '#333' },
-  smallLabel: { fontSize: 12, color: '#666', marginBottom: 4 },
+  permissionBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  permissionText: { textAlign: 'center', color: colors.inkSoft, paddingHorizontal: 24 },
+  panel: { padding: spacing.lg, gap: spacing.xs },
+  pieceName: { fontSize: 20, fontWeight: '700', color: colors.ink, marginTop: spacing.sm },
+  pieceSubtitle: { color: colors.inkSoft, fontSize: 13, marginBottom: spacing.sm },
+  rowTitle: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs, marginBottom: spacing.xs },
+  hintText: { color: colors.success, fontSize: 12 },
+  describingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  photoPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
+  label: { fontSize: 14, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.sm, color: colors.ink },
+  smallLabel: { fontSize: 12, color: colors.inkSoft, marginBottom: spacing.xs },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: 15,
+    color: colors.ink,
+    backgroundColor: colors.surface,
   },
-  inputDisabled: { backgroundColor: '#f5f5f5', color: '#888' },
-  chipScroller: { marginBottom: 4 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: '#f0f0f0', marginEnd: 8 },
-  chipActive: { backgroundColor: '#1a1a1a' },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
-  toggleRow: { flexDirection: 'row', gap: 8 },
-  toggle: { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#f0f0f0', alignItems: 'center' },
-  toggleActive: { backgroundColor: '#1a1a1a' },
-  toggleText: { color: '#333', fontWeight: '600' },
-  toggleTextActive: { color: '#fff' },
-  variantFieldsRow: { flexDirection: 'row', gap: 8 },
+  inputDisabled: { backgroundColor: colors.surfaceAlt, color: colors.inkMuted },
+  chipScroller: { marginBottom: spacing.xs },
+  variantFieldsRow: { flexDirection: 'row', gap: spacing.sm },
   variantField: { flex: 1 },
-  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
-  suggestionBox: { borderWidth: 1, borderColor: '#eee', borderRadius: 8, marginTop: 4, paddingHorizontal: 10 },
-  smallButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#f0f0f0', borderRadius: 8, alignSelf: 'flex-start', marginTop: 12 },
-  smallButtonText: { fontWeight: '600' },
-  actionRow: { flexDirection: 'row', gap: 12, marginTop: 24, marginBottom: 40 },
-  secondaryButton: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center', backgroundColor: '#f0f0f0' },
-  secondaryButtonText: { fontWeight: '600', color: '#333' },
-  saveButton: { flex: 2, backgroundColor: '#1a1a1a', borderRadius: 8, paddingVertical: 14, alignItems: 'center' },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  suggestionBox: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, marginTop: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: colors.surface },
+  spacedTop: { marginTop: spacing.md },
+  inlineButtonRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
+  actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl, marginBottom: 40 },
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +20,15 @@ import { madToCentimes, centimesToMad, formatMad } from '../utils/money';
 import { gramsToMg, mgToGrams } from '../utils/weight';
 import type { Supplier, SupplierKind } from '../db/schema/suppliers';
 import type { PaymentMethod } from '../db/schema/supplierPayments';
+import { SectionHeader } from '../components/SectionHeader';
+import { Chip } from '../components/Chip';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { EmptyState } from '../components/EmptyState';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import type { Colors } from '../theme/palettes';
+import { PAYMENT_METHOD_ICONS, SUPPLIER_KIND_ICONS } from '../theme/icons';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Purchases'>;
 
@@ -39,6 +47,8 @@ const METHODS: PaymentMethod[] = ['cash', 'card', 'transfer'];
 
 export function PurchasesScreen(_props: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [supplierQuery, setSupplierQuery] = useState('');
   const [supplierSuggestions, setSupplierSuggestions] = useState<Supplier[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -202,8 +212,8 @@ export function PurchasesScreen(_props: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.label}>{t('purchases.supplier')}</Text>
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <SectionHeader icon="business" title={t('purchases.supplier')} style={styles.firstSection} />
       <TextInput
         style={styles.input}
         value={selectedSupplier ? selectedSupplier.name : supplierQuery}
@@ -213,6 +223,7 @@ export function PurchasesScreen(_props: Props) {
           setShowNewSupplierForm(false);
         }}
         placeholder={t('purchases.supplierPlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
       {supplierSuggestions.length > 0 && (
         <View style={styles.suggestionBox}>
@@ -235,30 +246,24 @@ export function PurchasesScreen(_props: Props) {
       {!selectedSupplier && supplierQuery.trim().length > 0 && supplierSuggestions.length === 0 && (
         <>
           {!showNewSupplierForm ? (
-            <Pressable style={styles.smallButton} onPress={() => setShowNewSupplierForm(true)}>
-              <Text style={styles.smallButtonText}>{t('purchases.createSupplier', { name: supplierQuery.trim() })}</Text>
-            </Pressable>
+            <Button label={t('purchases.createSupplier', { name: supplierQuery.trim() })} icon="add" size="sm" onPress={() => setShowNewSupplierForm(true)} style={styles.spacedTop} />
           ) : (
-            <View style={styles.panel}>
+            <Card style={styles.spacedTop}>
               <View style={styles.chipWrap}>
                 {SUPPLIER_KINDS.map((k) => (
-                  <Pressable key={k} onPress={() => setNewSupplierKind(k)} style={[styles.chip, newSupplierKind === k && styles.chipActive]}>
-                    <Text style={[styles.chipText, newSupplierKind === k && styles.chipTextActive]}>{t(`purchases.kind_${k}`)}</Text>
-                  </Pressable>
+                  <Chip key={k} label={t(`purchases.kind_${k}`)} active={newSupplierKind === k} onPress={() => setNewSupplierKind(k)} icon={SUPPLIER_KIND_ICONS[k]} />
                 ))}
               </View>
-              <Pressable style={styles.smallButton} onPress={handleCreateSupplier}>
-                <Text style={styles.smallButtonText}>{t('common.save')}</Text>
-              </Pressable>
-            </View>
+              <Button label={t('common.save')} icon="checkmark" variant="primary" size="sm" onPress={handleCreateSupplier} style={styles.spacedTop} />
+            </Card>
           )}
         </>
       )}
 
       {selectedSupplier && (
         <>
-          <Text style={styles.label}>{t('purchases.items')}</Text>
-          <TextInput style={styles.input} value={itemSearch} onChangeText={setItemSearch} placeholder={t('sale.searchPlaceholder')} />
+          <SectionHeader icon="cube" title={t('purchases.items')} />
+          <TextInput style={styles.input} value={itemSearch} onChangeText={setItemSearch} placeholder={t('sale.searchPlaceholder')} placeholderTextColor={colors.inkMuted} />
           {itemResults.length > 0 && (
             <View style={styles.suggestionBox}>
               {itemResults.map((r) => (
@@ -269,22 +274,18 @@ export function PurchasesScreen(_props: Props) {
             </View>
           )}
           {sizePick && (
-            <View style={styles.panel}>
+            <Card style={styles.spacedTop}>
               <View style={styles.chipWrap}>
                 {sizePick.variants.map((v) => (
-                  <Pressable key={v.id} style={styles.chip} onPress={() => addItem(sizePick.piece.name, v.id, v.label, v.nominalWeightMg, v.costCentimes)}>
-                    <Text style={styles.chipText}>{v.label}</Text>
-                  </Pressable>
+                  <Chip key={v.id} label={v.label} onPress={() => addItem(sizePick.piece.name, v.id, v.label, v.nominalWeightMg, v.costCentimes)} />
                 ))}
               </View>
-              <Pressable style={styles.smallButton} onPress={() => setSizePick(null)}>
-                <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-              </Pressable>
-            </View>
+              <Button label={t('common.cancel')} variant="secondary" size="sm" onPress={() => setSizePick(null)} style={styles.spacedTop} />
+            </Card>
           )}
 
           {items.map((item) => (
-            <View key={item.key} style={styles.itemCard}>
+            <Card key={item.key} style={styles.spacedTop}>
               <Text style={styles.rowTitle}>
                 {item.pieceName} · {item.variantLabel}
               </Text>
@@ -302,87 +303,69 @@ export function PurchasesScreen(_props: Props) {
                   <TextInput style={styles.input} value={item.costMad} onChangeText={(v) => updateItem(item.key, { costMad: v })} keyboardType="decimal-pad" />
                 </View>
               </View>
-              <Pressable onPress={() => removeItem(item.key)}>
-                <Text style={styles.removeText}>{t('common.delete')}</Text>
-              </Pressable>
-            </View>
+              <Button label={t('common.delete')} tone="danger" variant="text" icon="trash-outline" size="sm" onPress={() => removeItem(item.key)} style={styles.spacedTop} />
+            </Card>
           ))}
 
-          <Text style={styles.label}>{t('purchases.reference')}</Text>
-          <TextInput style={styles.input} value={reference} onChangeText={setReference} />
-          <Text style={styles.label}>{t('purchases.dueOn')}</Text>
-          <TextInput style={styles.input} value={dueOn} onChangeText={setDueOn} placeholder="YYYY-MM-DD" />
-          <Text style={styles.label}>{t('piece.notes')}</Text>
-          <TextInput style={[styles.input, styles.notesInput]} value={note} onChangeText={setNote} multiline />
+          <SectionHeader icon="document-text" title={t('purchases.reference')} />
+          <TextInput style={styles.input} value={reference} onChangeText={setReference} placeholderTextColor={colors.inkMuted} />
+          <Text style={styles.smallLabel}>{t('purchases.dueOn')}</Text>
+          <TextInput style={styles.input} value={dueOn} onChangeText={setDueOn} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inkMuted} />
+          <Text style={styles.smallLabel}>{t('piece.notes')}</Text>
+          <TextInput style={[styles.input, styles.notesInput]} value={note} onChangeText={setNote} multiline placeholderTextColor={colors.inkMuted} />
 
-          <Pressable style={styles.saveButton} onPress={handleSavePurchase} disabled={saving}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('purchases.savePurchase')}</Text>}
-          </Pressable>
+          <Button label={t('purchases.savePurchase')} icon="checkmark-circle" variant="primary" fullWidth loading={saving} onPress={handleSavePurchase} style={styles.spacedTopLg} />
 
-          <Text style={styles.label}>{t('purchases.history')}</Text>
-          {history.length === 0 && <Text style={styles.emptyText}>{t('purchases.noHistory')}</Text>}
-          {history.map((p) => (
-            <View key={p.id} style={styles.itemCard}>
-              <Text style={styles.rowTitle}>{p.reference || p.occurredAt.slice(0, 10)}</Text>
-              <Text style={styles.pieceSubtitle}>
-                {t('purchases.total')}: {formatMad(p.totalCentimes)} · {t('purchases.paid')}: {formatMad(p.paidCentimes)} · {t('purchases.outstanding')}: {formatMad(p.outstandingCentimes)}
-              </Text>
-              {p.outstandingCentimes > 0 &&
-                (payingPurchaseId === p.id ? (
-                  <View style={{ gap: 8 }}>
-                    <TextInput style={styles.input} value={payAmountMad} onChangeText={setPayAmountMad} keyboardType="decimal-pad" autoFocus />
-                    <View style={styles.chipWrap}>
-                      {METHODS.map((m) => (
-                        <Pressable key={m} onPress={() => setPayMethod(m)} style={[styles.chip, payMethod === m && styles.chipActive]}>
-                          <Text style={[styles.chipText, payMethod === m && styles.chipTextActive]}>{t(`sale.method_${m}`)}</Text>
-                        </Pressable>
-                      ))}
+          <SectionHeader icon="time" title={t('purchases.history')} />
+          {history.length === 0 ? (
+            <EmptyState icon="receipt-outline" message={t('purchases.noHistory')} compact />
+          ) : (
+            history.map((p) => (
+              <Card key={p.id} style={styles.spacedTop}>
+                <Text style={styles.rowTitle}>{p.reference || p.occurredAt.slice(0, 10)}</Text>
+                <Text style={styles.pieceSubtitle}>
+                  {t('purchases.total')}: {formatMad(p.totalCentimes)} · {t('purchases.paid')}: {formatMad(p.paidCentimes)} · {t('purchases.outstanding')}: {formatMad(p.outstandingCentimes)}
+                </Text>
+                {p.outstandingCentimes > 0 &&
+                  (payingPurchaseId === p.id ? (
+                    <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+                      <TextInput style={styles.input} value={payAmountMad} onChangeText={setPayAmountMad} keyboardType="decimal-pad" autoFocus placeholderTextColor={colors.inkMuted} />
+                      <View style={styles.chipWrap}>
+                        {METHODS.map((m) => (
+                          <Chip key={m} label={t(`sale.method_${m}`)} active={payMethod === m} onPress={() => setPayMethod(m)} icon={PAYMENT_METHOD_ICONS[m]} />
+                        ))}
+                      </View>
+                      <View style={styles.actionRow}>
+                        <Button label={t('common.cancel')} variant="secondary" onPress={() => setPayingPurchaseId(null)} style={{ flex: 1 }} />
+                        <Button label={t('layaways.recordPayment')} variant="primary" icon="checkmark" onPress={() => handleRecordPayment(p)} style={{ flex: 2 }} />
+                      </View>
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <Pressable style={styles.smallButton} onPress={() => setPayingPurchaseId(null)}>
-                        <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-                      </Pressable>
-                      <Pressable style={styles.smallButton} onPress={() => handleRecordPayment(p)}>
-                        <Text style={styles.smallButtonText}>{t('layaways.recordPayment')}</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                ) : (
-                  <Pressable style={styles.smallButton} onPress={() => setPayingPurchaseId(p.id)}>
-                    <Text style={styles.smallButtonText}>{t('layaways.recordPayment')}</Text>
-                  </Pressable>
-                ))}
-            </View>
-          ))}
+                  ) : (
+                    <Button label={t('layaways.recordPayment')} icon="cash-outline" size="sm" onPress={() => setPayingPurchaseId(p.id)} style={styles.spacedTop} />
+                  ))}
+              </Card>
+            ))
+          )}
         </>
       )}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 4, backgroundColor: '#fff' },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 6, color: '#333' },
-  smallLabel: { fontSize: 12, color: '#666', marginBottom: 4 },
-  emptyText: { color: '#888', marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+const makeStyles = (colors: Colors) => StyleSheet.create({
+  container: { padding: spacing.lg, paddingBottom: 60 },
+  firstSection: { marginTop: 0 },
+  smallLabel: { fontSize: 12, color: colors.inkSoft, marginTop: spacing.sm, marginBottom: spacing.xs },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 15, color: colors.ink, backgroundColor: colors.surface },
   notesInput: { minHeight: 70, textAlignVertical: 'top' },
-  suggestionBox: { borderWidth: 1, borderColor: '#eee', borderRadius: 8, marginTop: 4, paddingHorizontal: 10 },
-  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
-  rowTitle: { fontSize: 15, fontWeight: '600' },
-  pieceSubtitle: { color: '#666', fontSize: 13 },
-  panel: { borderWidth: 1, borderColor: '#eee', borderRadius: 10, padding: 12, marginTop: 8, gap: 8 },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: '#f0f0f0' },
-  chipActive: { backgroundColor: '#1a1a1a' },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
-  itemCard: { borderWidth: 1, borderColor: '#eee', borderRadius: 10, padding: 12, marginTop: 8, gap: 8 },
-  variantFieldsRow: { flexDirection: 'row', gap: 8 },
+  suggestionBox: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, marginTop: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: colors.surface },
+  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  rowTitle: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  pieceSubtitle: { color: colors.inkSoft, fontSize: 13 },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  variantFieldsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   variantField: { flex: 1 },
-  removeText: { color: '#b00020' },
-  smallButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#f0f0f0', borderRadius: 8, alignSelf: 'flex-start', marginTop: 8 },
-  smallButtonText: { fontWeight: '600' },
-  saveButton: { backgroundColor: '#1a1a1a', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  spacedTop: { marginTop: spacing.sm },
+  spacedTopLg: { marginTop: spacing.lg },
+  actionRow: { flexDirection: 'row', gap: spacing.md },
 });

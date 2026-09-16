@@ -38,6 +38,39 @@ export async function createReservation(input: NewReservationInput): Promise<Res
   return created;
 }
 
+export interface UpdateReservationInput {
+  qty?: number;
+  expiresAt?: string | null;
+}
+
+/** Editing qty re-checks availability, giving this reservation's own current
+ * hold back to the pool first — otherwise it would always block against
+ * itself. */
+export async function updateReservation(id: string, input: UpdateReservationInput): Promise<void> {
+  const [current] = await db.select().from(reservations).where(eq(reservations.id, id));
+  if (!current || current.status !== 'held') {
+    throw new Error('Reservation not found or no longer active');
+  }
+
+  const patch: Partial<Reservation> = { updatedAt: new Date().toISOString() };
+
+  if (input.qty !== undefined && input.qty !== current.qty) {
+    if (input.qty <= 0) throw new Error('Quantity must be greater than zero');
+    const level = await getStockLevel(current.variantId);
+    const availableForThisReservation = level.available + current.qty;
+    if (input.qty > availableForThisReservation) {
+      throw new Error(`Only ${availableForThisReservation} available for this variant`);
+    }
+    patch.qty = input.qty;
+  }
+
+  if (input.expiresAt !== undefined) {
+    patch.expiresAt = input.expiresAt;
+  }
+
+  await db.update(reservations).set(patch).where(eq(reservations.id, id));
+}
+
 export interface ActiveReservation extends Reservation {
   pieceId: string;
   pieceName: string;

@@ -102,6 +102,48 @@ export async function createPieceWithVariants(input: NewPieceInput): Promise<Cre
   });
 }
 
+export interface UpdatePieceInput {
+  name?: string;
+  category?: string;
+  materialId?: string;
+  notes?: string | null;
+}
+
+export async function updatePiece(pieceId: string, input: UpdatePieceInput): Promise<void> {
+  const patch: Partial<Piece> = { updatedAt: new Date().toISOString() };
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.category !== undefined) patch.category = input.category;
+  if (input.materialId !== undefined) patch.materialId = input.materialId;
+  if (input.notes !== undefined) patch.notes = input.notes;
+  await db.update(pieces).set(patch).where(eq(pieces.id, pieceId));
+}
+
+export interface UpdateVariantInput {
+  label?: string;
+  nominalWeightMg?: number;
+  costCentimes?: number;
+  priceCentimes?: number;
+}
+
+export async function updateVariant(variantId: string, input: UpdateVariantInput): Promise<void> {
+  if (input.nominalWeightMg !== undefined && input.nominalWeightMg <= 0) {
+    throw new Error('Weight must be greater than zero');
+  }
+  if (input.costCentimes !== undefined && input.costCentimes <= 0) {
+    throw new Error('Cost must be greater than zero');
+  }
+  if (input.priceCentimes !== undefined && input.priceCentimes <= 0) {
+    throw new Error('Price must be greater than zero');
+  }
+
+  const patch: Partial<Variant> = { updatedAt: new Date().toISOString() };
+  if (input.label !== undefined) patch.label = input.label;
+  if (input.nominalWeightMg !== undefined) patch.nominalWeightMg = input.nominalWeightMg;
+  if (input.costCentimes !== undefined) patch.costCentimes = input.costCentimes;
+  if (input.priceCentimes !== undefined) patch.priceCentimes = input.priceCentimes;
+  await db.update(variants).set(patch).where(eq(variants.id, variantId));
+}
+
 export async function addVariant(pieceId: string, input: NewVariantInput): Promise<Variant> {
   const now = new Date().toISOString();
   const id = generateId();

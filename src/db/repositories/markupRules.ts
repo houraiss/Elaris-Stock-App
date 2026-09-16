@@ -6,22 +6,24 @@ import { generateId } from '../../utils/id';
 
 export interface MarkupRuleWithMaterial extends MarkupRuleRow {
   materialName: string | null;
+  materialCode: string | null;
 }
 
 export async function listMarkupRules(): Promise<MarkupRuleWithMaterial[]> {
   const rows = await db
-    .select({ rule: markupRules, materialName: materials.name })
+    .select({ rule: markupRules, materialName: materials.name, materialCode: materials.code })
     .from(markupRules)
     .leftJoin(materials, eq(markupRules.materialId, materials.id))
     .orderBy(asc(markupRules.minWeightMg), desc(markupRules.effectiveFrom));
 
-  return rows.map((r) => ({ ...r.rule, materialName: r.materialName }));
+  return rows.map((r) => ({ ...r.rule, materialName: r.materialName, materialCode: r.materialCode }));
 }
 
 export interface MarkupRuleGroup {
   key: string;
   materialId: string | null;
   materialName: string | null;
+  materialCode: string | null;
   minWeightMg: number;
   maxWeightMg: number;
   active: MarkupRuleWithMaterial;
@@ -51,6 +53,7 @@ export function groupMarkupRules(rules: MarkupRuleWithMaterial[]): MarkupRuleGro
       key,
       materialId: active.materialId,
       materialName: active.materialName,
+      materialCode: active.materialCode,
       minWeightMg: active.minWeightMg,
       maxWeightMg: active.maxWeightMg,
       active,

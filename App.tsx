@@ -9,9 +9,19 @@ import { seedDatabase } from './src/db/seed';
 import { applyStoredLanguageOnBoot } from './src/settings/languagePreference';
 import { runSync } from './src/sync/syncEngine';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
 export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
+function AppContent() {
   const { t } = useTranslation();
+  const { colors, scheme } = useTheme();
   const { success: migrationsReady, error: migrationError } = useDbMigrations();
   const [seedError, setSeedError] = useState<Error | null>(null);
   const [seeded, setSeeded] = useState(false);
@@ -39,21 +49,21 @@ export default function App() {
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.error}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={[styles.error, { color: colors.danger }]}>
           {t('common.errorGeneric')}: {error.message}
         </Text>
-        <StatusBar style="auto" />
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       </View>
     );
   }
 
   if (!seeded || !prefsReady) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator />
-        <Text>{t('common.loading')}</Text>
-        <StatusBar style="auto" />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.ink} />
+        <Text style={{ color: colors.ink }}>{t('common.loading')}</Text>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       </View>
     );
   }
@@ -61,7 +71,7 @@ export default function App() {
   return (
     <>
       <RootNavigator />
-      <StatusBar style="auto" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     </>
   );
 }
@@ -69,13 +79,11 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   error: {
-    color: '#b00020',
     textAlign: 'center',
     paddingHorizontal: 24,
   },

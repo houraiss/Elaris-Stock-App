@@ -6,6 +6,7 @@
     "loading": "Loading…",
     "errorGeneric": "Something went wrong",
     "add": "Add",
+    "edit": "Edit",
     "delete": "Delete",
     "camera": "Camera",
     "gallery": "Gallery",
@@ -36,7 +37,26 @@
     "recentActivity": "Recent activity",
     "noActivityYet": "Nothing recorded yet",
     "activity_sale": "Sale",
-    "activity_purchase": "Purchase"
+    "activity_purchase": "Purchase",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "greetingNight": "Good night",
+    "quickActions": "Quick actions",
+    "overview": "Overview",
+    "silverSpotTitle": "Silver spot price",
+    "perGram": "per gram",
+    "silverUpdatedNow": "Updated just now",
+    "silverUpdatedMinutes_one": "Updated {{count}} minute ago",
+    "silverUpdatedMinutes_other": "Updated {{count}} minutes ago",
+    "silverUpdatedHours_one": "Updated {{count}} hour ago",
+    "silverUpdatedHours_other": "Updated {{count}} hours ago",
+    "silverUnavailable": "Price unavailable — check your connection",
+    "silverDisclaimer": "Reference spot price, converted to MAD. Actual dealer rates may vary.",
+    "editLayout": "Edit layout",
+    "layoutEditHint": "Reorder your dashboard sections",
+    "resetLayout": "Reset to default",
+    "doneEditingLayout": "Done"
   },
   "stock": {
     "title": "Stock",
@@ -46,7 +66,12 @@
     "available": "Available",
     "unique": "Unique",
     "variants_one": "{{count}} variant",
-    "variants_other": "{{count}} variants"
+    "variants_other": "{{count}} variants",
+    "searchPlaceholder": "Search by name",
+    "filterByMaterial": "Material",
+    "filterByCategory": "Category",
+    "noMatches": "No pieces match your search or filters",
+    "clearFilters": "Clear filters"
   },
   "piece": {
     "addTitle": "Add piece",
@@ -76,6 +101,13 @@
     "notes": "Notes",
     "validationError": "Please fill in name, category and every variant's weight and cost",
     "saveError": "Could not save this piece"
+  },
+  "material": {
+    "argent_925": "Silver 925",
+    "argent_rhodie_925": "Rhodium",
+    "argent_800": "Silver 800",
+    "argent_800_chrome": "Chrome-plated",
+    "argent_800_dore": "Gold-plated"
   },
   "pieceDetail": {
     "variants": "Variants",
@@ -207,6 +239,13 @@
     "language_en": "English",
     "language_fr": "Français",
     "language_ar": "العربية",
+    "appearance": "Appearance",
+    "appearanceLight": "Light",
+    "appearanceDark": "Dark",
+    "appearanceSystem": "System",
+    "visualStyle": "Style",
+    "visualStyleStandard": "Standard",
+    "visualStyleLiquidGlass": "Liquid Glass",
     "restartTitle": "Restart needed",
     "restartBody": "Right-to-left layout only applies after a restart.",
     "restartNow": "Restart now",
@@ -239,7 +278,11 @@
     "restoreNow": "Restore from cloud",
     "restoreDoneTitle": "Restored",
     "restoreDoneBody": "Your data is back, including {{photos}} photos",
-    "restoreError": "Restore failed"
+    "restoreError": "Restore failed",
+    "aboutElaris": "About Elaris",
+    "aboutTagline": "Jewelry • Store",
+    "followOnInstagram": "Follow on Instagram",
+    "instagramUnavailable": "Couldn't open Instagram"
   },
   "insights": {
     "title": "Insights",

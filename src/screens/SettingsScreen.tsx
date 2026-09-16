@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   DevSettings,
+  Linking,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../i18n';
@@ -31,6 +32,29 @@ import { isCloudConfigured } from '../sync/supabaseClient';
 import { runSync, getLastSyncAt } from '../sync/syncEngine';
 import { restoreFromCloud, hasLocalCatalogueData } from '../sync/restore';
 import type { Material } from '../db/schema/materials';
+import { SectionHeader } from '../components/SectionHeader';
+import { Chip } from '../components/Chip';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { SegmentedControl, type SegmentOption } from '../components/SegmentedControl';
+import { ElarisWordmark } from '../components/ElarisWordmark';
+import { getMaterialDisplayName } from '../i18n/materialName';
+import { radius, spacing } from '../theme';
+import { useTheme, type ThemePreference, type VisualStyle } from '../theme/ThemeContext';
+import type { Colors } from '../theme/palettes';
+
+const INSTAGRAM_HANDLE = 'elaris.925';
+
+const THEME_PREFERENCE_OPTIONS: SegmentOption<ThemePreference>[] = [
+  { value: 'light', label: 'settings.appearanceLight', icon: 'sunny-outline' },
+  { value: 'dark', label: 'settings.appearanceDark', icon: 'moon-outline' },
+  { value: 'system', label: 'settings.appearanceSystem', icon: 'phone-portrait-outline' },
+];
+
+const VISUAL_STYLE_OPTIONS: SegmentOption<VisualStyle>[] = [
+  { value: 'standard', label: 'settings.visualStyleStandard', icon: 'square-outline' },
+  { value: 'liquidGlass', label: 'settings.visualStyleLiquidGlass', icon: 'water-outline' },
+];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -50,6 +74,8 @@ function bpsToPercentLabel(bps: number): string {
 
 export function SettingsScreen(_props: Props) {
   const { t } = useTranslation();
+  const { colors, preference, setPreference, visualStyle, setVisualStyle } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [rules, setRules] = useState<MarkupRuleWithMaterial[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -222,6 +248,17 @@ export function SettingsScreen(_props: Props) {
     }
   }
 
+  async function handleOpenInstagram() {
+    const appUrl = `instagram://user?username=${INSTAGRAM_HANDLE}`;
+    const webUrl = `https://instagram.com/${INSTAGRAM_HANDLE}`;
+    try {
+      const canOpenApp = await Linking.canOpenURL(appUrl);
+      await Linking.openURL(canOpenApp ? appUrl : webUrl);
+    } catch {
+      Alert.alert(t('common.errorGeneric'), t('settings.instagramUnavailable'));
+    }
+  }
+
   function handleRestore() {
     Alert.alert(t('settings.restoreConfirmTitle'), t('settings.restoreConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -244,21 +281,36 @@ export function SettingsScreen(_props: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <SectionHeader icon="language" title={t('settings.language')} style={styles.firstSection} />
       <View style={styles.chipWrap}>
         {SUPPORTED_LANGUAGES.map((lang) => (
-          <Pressable key={lang} style={styles.chip} onPress={() => handlePickLanguage(lang)}>
-            <Text style={styles.chipText}>{t(`settings.language_${lang}`)}</Text>
-          </Pressable>
+          <Chip key={lang} label={t(`settings.language_${lang}`)} active={false} onPress={() => handlePickLanguage(lang)} />
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>{t('settings.markupRules')}</Text>
+      <SectionHeader icon="contrast" title={t('settings.appearance')} />
+      <SegmentedControl
+        options={THEME_PREFERENCE_OPTIONS.map((opt) => ({ ...opt, label: t(opt.label) }))}
+        value={preference}
+        onChange={setPreference}
+      />
+
+      <SectionHeader icon="water" title={t('settings.visualStyle')} />
+      <SegmentedControl
+        options={VISUAL_STYLE_OPTIONS.map((opt) => ({ ...opt, label: t(opt.label) }))}
+        value={visualStyle}
+        onChange={setVisualStyle}
+      />
+
+      <SectionHeader icon="pricetags" title={t('settings.markupRules')} />
       {groups.map((group) => (
-        <View key={group.key} style={styles.card}>
+        <Card key={group.key} style={styles.card}>
           <Text style={styles.cardTitle}>
-            {group.materialName ?? t('settings.allMaterials')} · {formatWeightRange(group.minWeightMg, group.maxWeightMg)}
+            {group.materialCode && group.materialName
+              ? getMaterialDisplayName(group.materialCode, group.materialName, t)
+              : t('settings.allMaterials')}{' '}
+            · {formatWeightRange(group.minWeightMg, group.maxWeightMg)}
           </Text>
           <Text style={styles.cardValue}>{bpsToPercentLabel(group.active.markupBps)}</Text>
           {group.history.length > 0 && (
@@ -269,54 +321,50 @@ export function SettingsScreen(_props: Props) {
           )}
 
           {editingKey === group.key ? (
-            <View style={{ gap: 8, marginTop: 8 }}>
-              <TextInput style={styles.input} value={editPercent} onChangeText={setEditPercent} keyboardType="decimal-pad" placeholder="%" />
-              <TextInput style={styles.input} value={editEffectiveFrom} onChangeText={setEditEffectiveFrom} placeholder="YYYY-MM-DD" />
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <Pressable style={styles.smallButton} onPress={() => setEditingKey(null)} disabled={savingRule}>
-                  <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-                </Pressable>
-                <Pressable style={styles.smallButton} onPress={() => handleSaveEdit(group)} disabled={savingRule}>
-                  {savingRule ? <ActivityIndicator /> : <Text style={styles.smallButtonText}>{t('common.save')}</Text>}
-                </Pressable>
+            <View style={styles.editForm}>
+              <TextInput style={styles.input} value={editPercent} onChangeText={setEditPercent} keyboardType="decimal-pad" placeholder="%" placeholderTextColor={colors.inkMuted} />
+              <TextInput style={styles.input} value={editEffectiveFrom} onChangeText={setEditEffectiveFrom} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inkMuted} />
+              <View style={styles.actionRow}>
+                <Button label={t('common.cancel')} variant="secondary" size="sm" onPress={() => setEditingKey(null)} disabled={savingRule} />
+                <Button label={t('common.save')} icon="checkmark" size="sm" onPress={() => handleSaveEdit(group)} loading={savingRule} />
               </View>
             </View>
           ) : (
-            <Pressable style={styles.smallButton} onPress={() => openEdit(group)}>
-              <Text style={styles.smallButtonText}>{t('settings.editRule')}</Text>
-            </Pressable>
+            <Button label={t('settings.editRule')} icon="create-outline" size="sm" onPress={() => openEdit(group)} style={styles.editButton} />
           )}
-        </View>
+        </Card>
       ))}
 
       {!showAddCustom ? (
-        <Pressable
-          style={styles.smallButton}
+        <Button
+          label={t('settings.addCustomRule')}
+          icon="add"
+          size="sm"
           onPress={() => {
             resetCustomForm();
             setShowAddCustom(true);
           }}
-        >
-          <Text style={styles.smallButtonText}>{t('settings.addCustomRule')}</Text>
-        </Pressable>
+          style={styles.spacedTop}
+        />
       ) : (
-        <View style={styles.card}>
+        <Card style={[styles.card, styles.spacedTop]}>
           <Text style={styles.smallLabel}>{t('piece.material')}</Text>
           <View style={styles.chipWrap}>
-            <Pressable style={[styles.chip, customMaterialId === null && styles.chipActive]} onPress={() => setCustomMaterialId(null)}>
-              <Text style={[styles.chipText, customMaterialId === null && styles.chipTextActive]}>{t('settings.allMaterials')}</Text>
-            </Pressable>
+            <Chip label={t('settings.allMaterials')} active={customMaterialId === null} onPress={() => setCustomMaterialId(null)} />
             {materials.map((m) => (
-              <Pressable key={m.id} style={[styles.chip, customMaterialId === m.id && styles.chipActive]} onPress={() => setCustomMaterialId(m.id)}>
-                <Text style={[styles.chipText, customMaterialId === m.id && styles.chipTextActive]}>{m.name}</Text>
-              </Pressable>
+              <Chip
+                key={m.id}
+                label={getMaterialDisplayName(m.code, m.name, t)}
+                active={customMaterialId === m.id}
+                onPress={() => setCustomMaterialId(m.id)}
+              />
             ))}
           </View>
 
           <View style={styles.variantFieldsRow}>
             <View style={styles.variantField}>
               <Text style={styles.smallLabel}>{t('settings.minGrams')}</Text>
-              <TextInput style={styles.input} value={customMinGrams} onChangeText={setCustomMinGrams} keyboardType="decimal-pad" />
+              <TextInput style={styles.input} value={customMinGrams} onChangeText={setCustomMinGrams} keyboardType="decimal-pad" placeholderTextColor={colors.inkMuted} />
             </View>
             <View style={styles.variantField}>
               <Text style={styles.smallLabel}>{t('settings.maxGrams')}</Text>
@@ -327,87 +375,114 @@ export function SettingsScreen(_props: Props) {
                 keyboardType="decimal-pad"
                 editable={!customNoUpperBound}
                 placeholder={customNoUpperBound ? t('settings.noUpperBound') : undefined}
+                placeholderTextColor={colors.inkMuted}
               />
             </View>
           </View>
-          <Pressable style={styles.smallButton} onPress={() => setCustomNoUpperBound((v) => !v)}>
-            <Text style={styles.smallButtonText}>
-              {customNoUpperBound ? t('settings.hasUpperBound') : t('settings.noUpperBound')}
-            </Text>
-          </Pressable>
+          <Button
+            label={customNoUpperBound ? t('settings.hasUpperBound') : t('settings.noUpperBound')}
+            size="sm"
+            onPress={() => setCustomNoUpperBound((v) => !v)}
+            style={styles.spacedTop}
+          />
 
           <Text style={styles.smallLabel}>{t('settings.markupPercent')}</Text>
-          <TextInput style={styles.input} value={customPercent} onChangeText={setCustomPercent} keyboardType="decimal-pad" />
+          <TextInput style={styles.input} value={customPercent} onChangeText={setCustomPercent} keyboardType="decimal-pad" placeholderTextColor={colors.inkMuted} />
           <Text style={styles.smallLabel}>{t('settings.effectiveFrom')}</Text>
-          <TextInput style={styles.input} value={customEffectiveFrom} onChangeText={setCustomEffectiveFrom} placeholder="YYYY-MM-DD" />
+          <TextInput style={styles.input} value={customEffectiveFrom} onChangeText={setCustomEffectiveFrom} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inkMuted} />
 
-          <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-            <Pressable style={styles.smallButton} onPress={() => setShowAddCustom(false)} disabled={savingRule}>
-              <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-            </Pressable>
-            <Pressable style={styles.smallButton} onPress={handleSaveCustom} disabled={savingRule}>
-              {savingRule ? <ActivityIndicator /> : <Text style={styles.smallButtonText}>{t('common.save')}</Text>}
-            </Pressable>
+          <View style={[styles.actionRow, styles.spacedTop]}>
+            <Button label={t('common.cancel')} variant="secondary" onPress={() => setShowAddCustom(false)} disabled={savingRule} style={{ flex: 1 }} />
+            <Button label={t('common.save')} icon="checkmark" variant="primary" onPress={handleSaveCustom} loading={savingRule} style={{ flex: 1 }} />
           </View>
-        </View>
+        </Card>
       )}
 
-      <Text style={styles.sectionTitle}>{t('settings.lowStockThreshold')}</Text>
+      <SectionHeader icon="alert-circle" title={t('settings.lowStockThreshold')} />
       <TextInput
         style={styles.input}
         value={lowStockThreshold}
         onChangeText={handleLowStockThresholdChange}
         keyboardType="number-pad"
+        placeholderTextColor={colors.inkMuted}
       />
 
-      <Text style={styles.sectionTitle}>{t('settings.backup')}</Text>
-      <Pressable style={styles.saveButton} onPress={handleBackup} disabled={backingUp}>
-        {backingUp ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('settings.backupNow')}</Text>}
-      </Pressable>
+      <SectionHeader icon="cloud-upload" title={t('settings.backup')} />
+      <Button label={t('settings.backupNow')} icon="cloud-upload-outline" variant="primary" fullWidth loading={backingUp} onPress={handleBackup} />
 
-      <Text style={styles.sectionTitle}>{t('settings.cloudSync')}</Text>
+      <SectionHeader icon="sync" title={t('settings.cloudSync')} />
       {!isCloudConfigured ? (
-        <Text style={styles.emptyText}>{t('settings.cloudNotConfigured')}</Text>
+        <View style={styles.cloudStatusRow}>
+          <Ionicons name="cloud-offline-outline" size={16} color={colors.inkMuted} />
+          <Text style={styles.emptyText}>{t('settings.cloudNotConfigured')}</Text>
+        </View>
       ) : (
         <>
-          <Text style={styles.smallLabel}>
-            {lastSyncAt ? t('settings.lastSync', { date: new Date(lastSyncAt).toLocaleString() }) : t('settings.neverSynced')}
-          </Text>
-          <Pressable style={styles.saveButton} onPress={handleSyncNow} disabled={syncing}>
-            {syncing ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('settings.syncNow')}</Text>}
-          </Pressable>
+          <View style={styles.cloudStatusRow}>
+            <Ionicons name={lastSyncAt ? 'cloud-done-outline' : 'cloud-offline-outline'} size={16} color={colors.inkSoft} />
+            <Text style={styles.smallLabel}>
+              {lastSyncAt ? t('settings.lastSync', { date: new Date(lastSyncAt).toLocaleString() }) : t('settings.neverSynced')}
+            </Text>
+          </View>
+          <Button label={t('settings.syncNow')} icon="sync-outline" variant="primary" fullWidth loading={syncing} onPress={handleSyncNow} style={styles.spacedTop} />
           {canRestore && (
-            <Pressable style={[styles.saveButton, styles.restoreButton]} onPress={handleRestore} disabled={restoring}>
-              {restoring ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('settings.restoreNow')}</Text>}
-            </Pressable>
+            <Button
+              label={t('settings.restoreNow')}
+              icon="download-outline"
+              variant="primary"
+              tone="danger"
+              fullWidth
+              loading={restoring}
+              onPress={handleRestore}
+              style={styles.spacedTop}
+            />
           )}
         </>
       )}
+
+      <SectionHeader icon="sparkles" title={t('settings.aboutElaris')} />
+      <Card style={[styles.card, styles.aboutCard]}>
+        <ElarisWordmark color={colors.ink} width={140} />
+        <Text style={styles.aboutTagline}>{t('settings.aboutTagline')}</Text>
+        <Pressable onPress={handleOpenInstagram} style={styles.instagramRow} hitSlop={8}>
+          <Ionicons name="logo-instagram" size={18} color={colors.gold} />
+          <Text style={styles.instagramHandle}>@{INSTAGRAM_HANDLE}</Text>
+        </Pressable>
+      </Card>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 4, backgroundColor: '#fff', paddingBottom: 60 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginTop: 24, marginBottom: 8 },
-  smallLabel: { fontSize: 12, color: '#666', marginBottom: 4, marginTop: 8 },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: '#f0f0f0' },
-  chipActive: { backgroundColor: '#1a1a1a' },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
-  card: { borderWidth: 1, borderColor: '#eee', borderRadius: 10, padding: 12, marginTop: 8, gap: 4 },
-  cardTitle: { fontWeight: '600' },
-  cardValue: { fontSize: 20, fontWeight: '700' },
-  historyText: { color: '#888', fontSize: 12 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
-  inputDisabled: { backgroundColor: '#f5f5f5' },
-  variantFieldsRow: { flexDirection: 'row', gap: 8 },
+const makeStyles = (colors: Colors) => StyleSheet.create({
+  container: { padding: spacing.lg, paddingBottom: 60 },
+  firstSection: { marginTop: 0 },
+  smallLabel: { fontSize: 12, color: colors.inkSoft, marginBottom: spacing.xs, marginTop: spacing.sm },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  card: { marginTop: spacing.sm, gap: spacing.xs },
+  cardTitle: { fontWeight: '600', color: colors.ink },
+  cardValue: { fontSize: 20, fontWeight: '700', color: colors.gold },
+  historyText: { color: colors.inkMuted, fontSize: 12 },
+  editForm: { gap: spacing.sm, marginTop: spacing.sm },
+  editButton: { marginTop: spacing.sm },
+  spacedTop: { marginTop: spacing.sm },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.ink,
+    backgroundColor: colors.surface,
+  },
+  inputDisabled: { backgroundColor: colors.surfaceAlt },
+  variantFieldsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   variantField: { flex: 1 },
-  smallButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#f0f0f0', borderRadius: 8, alignSelf: 'flex-start', marginTop: 8 },
-  smallButtonText: { fontWeight: '600' },
-  saveButton: { backgroundColor: '#1a1a1a', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  restoreButton: { backgroundColor: '#7c2d12' },
-  emptyText: { color: '#888' },
+  actionRow: { flexDirection: 'row', gap: spacing.md },
+  cloudStatusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  emptyText: { color: colors.inkMuted, flexShrink: 1 },
+  aboutCard: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
+  aboutTagline: { color: colors.inkSoft, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
+  instagramRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  instagramHandle: { color: colors.gold, fontWeight: '600', fontSize: 15 },
 });

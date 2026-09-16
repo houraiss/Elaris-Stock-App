@@ -8,6 +8,13 @@
       "when": 1789241231703,
       "tag": "0000_heavy_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789443443946,
+      "tag": "0001_burly_james_howlett",
+      "breakpoints": true
     }
   ]
 }

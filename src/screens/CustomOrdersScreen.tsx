@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import {
@@ -17,16 +18,35 @@ import { searchCustomers, createCustomer } from '../db/repositories/customers';
 import { searchSuppliers, createSupplier } from '../db/repositories/suppliers';
 import { listActiveMaterials } from '../db/repositories/materials';
 import { madToCentimes, centimesToMad, formatMad } from '../utils/money';
+import { getMaterialDisplayName } from '../i18n/materialName';
 import { gramsToMg } from '../utils/weight';
 import type { Customer } from '../db/schema/customers';
 import type { Supplier } from '../db/schema/suppliers';
 import type { CustomOrderStatus } from '../db/schema/customOrders';
 import type { PaymentMethod } from '../db/schema/supplierPayments';
+import { SectionHeader } from '../components/SectionHeader';
+import { Chip } from '../components/Chip';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { Badge } from '../components/Badge';
+import { EmptyState } from '../components/EmptyState';
+import { radius, spacing, shadow } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import type { Colors } from '../theme/palettes';
+import { CUSTOM_ORDER_STATUS_ICONS, PAYMENT_METHOD_ICONS } from '../theme/icons';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CustomOrders'>;
 
 const STATUS_FLOW: CustomOrderStatus[] = ['quoted', 'ordered', 'in_production', 'ready', 'delivered'];
 const METHODS: PaymentMethod[] = ['cash', 'card', 'transfer'];
+const STATUS_TONE: Record<CustomOrderStatus, 'neutral' | 'info' | 'warning' | 'success' | 'gold'> = {
+  quoted: 'neutral',
+  ordered: 'info',
+  in_production: 'warning',
+  ready: 'success',
+  delivered: 'gold',
+  cancelled: 'neutral',
+};
 
 function nextStatus(status: CustomOrderStatus): CustomOrderStatus | null {
   const i = STATUS_FLOW.indexOf(status);
@@ -34,6 +54,8 @@ function nextStatus(status: CustomOrderStatus): CustomOrderStatus | null {
 }
 
 export function CustomOrdersScreen(_props: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation();
   const [orders, setOrders] = useState<CustomOrderWithDetail[]>([]);
   const [loading, setLoading] = useState(false);
@@ -112,19 +134,19 @@ export function CustomOrdersScreen(_props: Props) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.listContainer}>
-        {orders.length === 0 && !loading && <Text style={styles.emptyText}>{t('customOrders.empty')}</Text>}
+        {orders.length === 0 && !loading && <EmptyState icon="hammer-outline" message={t('customOrders.empty')} />}
         {orders.map((order) => {
           const remaining = Math.max(0, order.quotedPriceCentimes - order.depositsCentimes);
           const canAdvance = order.status !== 'delivered' && order.status !== 'cancelled';
           return (
-            <View key={order.id} style={styles.card}>
+            <Card key={order.id} style={styles.card}>
               <View style={styles.cardHeaderRow}>
                 <Text style={styles.rowTitle}>{order.customerName}</Text>
-                <View style={[styles.statusBadge, order.overdue && styles.statusBadgeOverdue]}>
-                  <Text style={styles.statusBadgeText}>
-                    {order.overdue ? t('customOrders.overdue') : t(`customOrders.status_${order.status}`)}
-                  </Text>
-                </View>
+                <Badge
+                  label={order.overdue ? t('customOrders.overdue') : t(`customOrders.status_${order.status}`)}
+                  tone={order.overdue ? 'danger' : STATUS_TONE[order.status]}
+                  icon={order.overdue ? 'alert-circle' : CUSTOM_ORDER_STATUS_ICONS[order.status]}
+                />
               </View>
               <Text style={styles.pieceSubtitle}>{order.description}</Text>
               {order.craftsmanName && (
@@ -138,7 +160,7 @@ export function CustomOrdersScreen(_props: Props) {
               </Text>
 
               {activeAction?.orderId === order.id ? (
-                <View style={{ gap: 8, marginTop: 8 }}>
+                <View style={styles.inlineForm}>
                   {activeAction.kind === 'deliver' && (
                     <>
                       <Text style={styles.smallLabel}>{t('customOrders.remainingDue', { amount: formatMad(remaining) })}</Text>
@@ -147,6 +169,7 @@ export function CustomOrdersScreen(_props: Props) {
                         value={actualWeightGrams}
                         onChangeText={setActualWeightGrams}
                         placeholder={t('customOrders.actualWeightGrams')}
+                        placeholderTextColor={colors.inkMuted}
                         keyboardType="decimal-pad"
                       />
                     </>
@@ -156,52 +179,46 @@ export function CustomOrdersScreen(_props: Props) {
                     value={amountMad}
                     onChangeText={setAmountMad}
                     placeholder={t('sale.depositMad')}
+                    placeholderTextColor={colors.inkMuted}
                     keyboardType="decimal-pad"
                     autoFocus
                   />
                   <View style={styles.chipWrap}>
                     {METHODS.map((m) => (
-                      <Pressable key={m} onPress={() => setMethod(m)} style={[styles.chip, method === m && styles.chipActive]}>
-                        <Text style={[styles.chipText, method === m && styles.chipTextActive]}>{t(`sale.method_${m}`)}</Text>
-                      </Pressable>
+                      <Chip key={m} label={t(`sale.method_${m}`)} active={method === m} onPress={() => setMethod(m)} icon={PAYMENT_METHOD_ICONS[m]} />
                     ))}
                   </View>
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <Pressable style={styles.smallButton} onPress={() => setActiveAction(null)}>
-                      <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.smallButton}
+                  <View style={styles.actionRow}>
+                    <Button label={t('common.cancel')} variant="secondary" size="sm" onPress={() => setActiveAction(null)} style={{ flex: 1 }} />
+                    <Button
+                      label={activeAction.kind === 'deposit' ? t('layaways.recordPayment') : t('customOrders.confirmDelivery')}
+                      variant="primary"
+                      icon="checkmark"
+                      size="sm"
                       onPress={() => (activeAction.kind === 'deposit' ? handleDeposit(order) : handleDeliver(order))}
-                    >
-                      <Text style={styles.smallButtonText}>
-                        {activeAction.kind === 'deposit' ? t('layaways.recordPayment') : t('customOrders.confirmDelivery')}
-                      </Text>
-                    </Pressable>
+                      style={{ flex: 1 }}
+                    />
                   </View>
                 </View>
               ) : (
                 <View style={styles.actionRow}>
                   {canAdvance && (
-                    <Pressable style={styles.smallButton} onPress={() => handleAdvance(order)}>
-                      <Text style={styles.smallButtonText}>
-                        {order.status === 'ready' ? t('customOrders.deliver') : t('customOrders.advance')}
-                      </Text>
-                    </Pressable>
+                    <Button
+                      label={order.status === 'ready' ? t('customOrders.deliver') : t('customOrders.advance')}
+                      icon="arrow-forward-circle-outline"
+                      size="sm"
+                      onPress={() => handleAdvance(order)}
+                    />
                   )}
                   {canAdvance && remaining > 0 && (
-                    <Pressable style={styles.smallButton} onPress={() => openAction(order.id, 'deposit')}>
-                      <Text style={styles.smallButtonText}>{t('customOrders.recordDeposit')}</Text>
-                    </Pressable>
+                    <Button label={t('customOrders.recordDeposit')} icon="cash-outline" size="sm" onPress={() => openAction(order.id, 'deposit')} />
                   )}
                   {canAdvance && (
-                    <Pressable style={styles.smallButton} onPress={() => handleCancel(order.id)}>
-                      <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-                    </Pressable>
+                    <Button label={t('common.cancel')} tone="danger" variant="text" size="sm" onPress={() => handleCancel(order.id)} />
                   )}
                 </View>
               )}
-            </View>
+            </Card>
           );
         })}
       </ScrollView>
@@ -216,7 +233,7 @@ export function CustomOrdersScreen(_props: Props) {
         />
       ) : (
         <Pressable style={styles.fab} onPress={() => setShowAdd(true)}>
-          <Text style={styles.fabText}>+</Text>
+          <Ionicons name="add" size={28} color={colors.onPrimary} />
         </Pressable>
       )}
     </View>
@@ -225,6 +242,8 @@ export function CustomOrdersScreen(_props: Props) {
 
 function NewCustomOrderPanel({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [customerQuery, setCustomerQuery] = useState('');
   const [customerSuggestions, setCustomerSuggestions] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -245,7 +264,7 @@ function NewCustomOrderPanel({ onDone, onCancel }: { onDone: () => void; onCance
     listActiveMaterials().then((rows) => {
       const silver800 = rows.find((m) => m.code === 'argent_800') ?? rows[0] ?? null;
       setMaterialId(silver800?.id ?? null);
-      setMaterialName(silver800?.name ?? '');
+      setMaterialName(silver800 ? getMaterialDisplayName(silver800.code, silver800.name, t) : '');
     });
   }, []);
 
@@ -312,8 +331,8 @@ function NewCustomOrderPanel({ onDone, onCancel }: { onDone: () => void; onCance
   }
 
   return (
-    <ScrollView style={styles.addPanel} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
-      <Text style={styles.label}>{t('sale.customer')}</Text>
+    <ScrollView style={styles.addPanel} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+      <SectionHeader icon="person" title={t('sale.customer')} style={styles.firstSection} />
       <TextInput
         style={styles.input}
         value={selectedCustomer ? selectedCustomer.displayName : customerQuery}
@@ -322,6 +341,7 @@ function NewCustomOrderPanel({ onDone, onCancel }: { onDone: () => void; onCance
           setCustomerQuery(text);
         }}
         placeholder={t('sale.customerPlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
       {customerSuggestions.length > 0 && (
         <View style={styles.suggestionBox}>
@@ -342,6 +362,7 @@ function NewCustomOrderPanel({ onDone, onCancel }: { onDone: () => void; onCance
           setCraftsmanQuery(text);
         }}
         placeholder={t('purchases.supplierPlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
       {craftsmanSuggestions.length > 0 && (
         <View style={styles.suggestionBox}>
@@ -354,7 +375,7 @@ function NewCustomOrderPanel({ onDone, onCancel }: { onDone: () => void; onCance
       )}
 
       <Text style={styles.label}>{t('customOrders.description')}</Text>
-      <TextInput style={[styles.input, styles.notesInput]} value={description} onChangeText={setDescription} multiline />
+      <TextInput style={[styles.input, styles.notesInput]} value={description} onChangeText={setDescription} multiline placeholderTextColor={colors.inkMuted} />
 
       <Text style={styles.label}>{t('customOrders.material')}</Text>
       <Text style={styles.pieceSubtitle}>{materialName}</Text>
@@ -381,62 +402,47 @@ function NewCustomOrderPanel({ onDone, onCancel }: { onDone: () => void; onCance
       </View>
 
       <Text style={styles.label}>{t('customOrders.promisedOn')}</Text>
-      <TextInput style={styles.input} value={promisedOn} onChangeText={setPromisedOn} placeholder="YYYY-MM-DD" />
+      <TextInput style={styles.input} value={promisedOn} onChangeText={setPromisedOn} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inkMuted} />
 
-      <View style={styles.actionRow}>
-        <Pressable style={styles.secondaryButton} onPress={onCancel} disabled={saving}>
-          <Text style={styles.secondaryButtonText}>{t('common.cancel')}</Text>
-        </Pressable>
-        <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('common.save')}</Text>}
-        </Pressable>
+      <View style={styles.finalActionRow}>
+        <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} disabled={saving} style={{ flex: 1 }} />
+        <Button label={t('common.save')} icon="checkmark" variant="primary" onPress={handleSave} loading={saving} style={{ flex: 2 }} />
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  listContainer: { padding: 16, paddingBottom: 80 },
-  emptyText: { color: '#888', textAlign: 'center', marginTop: 40 },
-  card: { borderWidth: 1, borderColor: '#eee', borderRadius: 10, padding: 12, marginBottom: 12, gap: 2 },
+const makeStyles = (colors: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  listContainer: { padding: spacing.md, paddingBottom: 80, gap: spacing.md },
+  card: { gap: 2 },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowTitle: { fontSize: 15, fontWeight: '600' },
-  pieceSubtitle: { color: '#666', fontSize: 13 },
-  statusBadge: { backgroundColor: '#f0f0f0', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  statusBadgeOverdue: { backgroundColor: '#fee2e2' },
-  statusBadgeText: { fontSize: 11, fontWeight: '600', color: '#333' },
-  actionRow: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' },
-  smallButton: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#f0f0f0', borderRadius: 8 },
-  smallButtonText: { fontWeight: '600', fontSize: 13 },
-  smallLabel: { fontSize: 12, color: '#666' },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 14, marginBottom: 6, color: '#333' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+  rowTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  pieceSubtitle: { color: colors.inkSoft, fontSize: 13 },
+  inlineForm: { gap: spacing.sm, marginTop: spacing.sm },
+  actionRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
+  finalActionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg, marginBottom: 40 },
+  smallLabel: { fontSize: 12, color: colors.inkSoft },
+  firstSection: { marginTop: 0 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.sm, color: colors.ink },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 15, color: colors.ink, backgroundColor: colors.surface },
   notesInput: { minHeight: 70, textAlignVertical: 'top' },
-  variantFieldsRow: { flexDirection: 'row', gap: 8 },
+  variantFieldsRow: { flexDirection: 'row', gap: spacing.sm },
   variantField: { flex: 1 },
-  suggestionBox: { borderWidth: 1, borderColor: '#eee', borderRadius: 8, marginTop: 4, paddingHorizontal: 10 },
-  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: '#f0f0f0' },
-  chipActive: { backgroundColor: '#1a1a1a' },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
-  secondaryButton: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center', backgroundColor: '#f0f0f0' },
-  secondaryButtonText: { fontWeight: '600', color: '#333' },
-  saveButton: { flex: 2, backgroundColor: '#1a1a1a', borderRadius: 8, paddingVertical: 14, alignItems: 'center' },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  addPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff' },
+  suggestionBox: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, marginTop: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: colors.surface },
+  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  addPanel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background },
   fab: {
     position: 'absolute',
-    end: 20,
-    bottom: 20,
+    end: spacing.xl,
+    bottom: spacing.xl,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#1a1a1a',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadow.fab,
   },
-  fabText: { color: '#fff', fontSize: 28, lineHeight: 30 },
 });

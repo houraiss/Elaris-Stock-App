@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Switch,
   ActivityIndicator,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { getPieceDetail } from '../db/repositories/pieces';
@@ -18,9 +20,19 @@ import { searchPieces, findVariantByBarcode, type PieceSearchResult } from '../d
 import { searchCustomers, createCustomer } from '../db/repositories/customers';
 import { createSale, type CartLine } from '../db/repositories/sales';
 import { madToCentimes, centimesToMad, formatMad } from '../utils/money';
+import { getMaterialDisplayName } from '../i18n/materialName';
 import type { Customer } from '../db/schema/customers';
 import type { SaleChannel } from '../db/schema/sales';
 import type { PaymentMethod } from '../db/schema/supplierPayments';
+import { SectionHeader } from '../components/SectionHeader';
+import { Chip } from '../components/Chip';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { EmptyState } from '../components/EmptyState';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import type { Colors } from '../theme/palettes';
+import { PAYMENT_METHOD_ICONS, SALE_CHANNEL_ICONS } from '../theme/icons';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LogSale'>;
 
@@ -43,6 +55,8 @@ const METHODS: PaymentMethod[] = ['cash', 'card', 'transfer'];
 
 export function LogSaleScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [cart, setCart] = useState<DisplayCartLine[]>([]);
   const [picker, setPicker] = useState<Picker>({ kind: 'closed' });
   const [channel, setChannel] = useState<SaleChannel>('shop');
@@ -104,7 +118,7 @@ export function LogSaleScreen({ navigation }: Props) {
     setPicker({
       kind: 'sizePick',
       piece,
-      materialName: detail.materialName,
+      materialName: getMaterialDisplayName(detail.materialCode, detail.materialName, t),
       variants: detail.variants.map((v) => ({
         id: v.id,
         label: v.label,
@@ -133,7 +147,7 @@ export function LogSaleScreen({ navigation }: Props) {
         unitPriceCentimes: variant.priceCentimes,
         pieceName: piece.name,
         variantLabel: variant.label,
-        materialName: detail!.materialName,
+        materialName: getMaterialDisplayName(detail!.materialCode, detail!.materialName, t),
         available: variant.stock.available,
       });
     } else {
@@ -183,7 +197,7 @@ export function LogSaleScreen({ navigation }: Props) {
       unitPriceCentimes: match.variant.priceCentimes,
       pieceName: match.piece.name,
       variantLabel: match.variant.label,
-      materialName: match.materialName,
+      materialName: getMaterialDisplayName(match.materialCode, match.materialName, t),
       available: match.stock.available,
     });
   }
@@ -270,14 +284,10 @@ export function LogSaleScreen({ navigation }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.addRow}>
-        <Pressable style={styles.smallButton} onPress={() => setPicker({ kind: 'scan' })}>
-          <Text style={styles.smallButtonText}>{t('sale.scan')}</Text>
-        </Pressable>
-        <Pressable style={styles.smallButton} onPress={() => setPicker({ kind: 'search' })}>
-          <Text style={styles.smallButtonText}>{t('sale.search')}</Text>
-        </Pressable>
+        <Button label={t('sale.scan')} icon="barcode-outline" onPress={() => setPicker({ kind: 'scan' })} style={{ flex: 1 }} />
+        <Button label={t('sale.search')} icon="search-outline" onPress={() => setPicker({ kind: 'search' })} style={{ flex: 1 }} />
       </View>
 
       {picker.kind === 'scan' && <ScanPanel onScanned={handleBarcodeScanned} onCancel={() => setPicker({ kind: 'closed' })} />}
@@ -285,68 +295,65 @@ export function LogSaleScreen({ navigation }: Props) {
         <SearchPanel onSelect={handleSelectSearchResult} onCancel={() => setPicker({ kind: 'closed' })} />
       )}
       {picker.kind === 'sizePick' && (
-        <View style={styles.panel}>
+        <Card style={styles.spacedTop}>
           <Text style={styles.label}>{picker.piece.name}</Text>
           <View style={styles.chipWrap}>
             {picker.variants.map((v) => (
-              <Pressable
+              <Chip
                 key={v.id}
                 disabled={v.available <= 0}
                 onPress={() => handleSelectSizedVariant(picker.piece, picker.materialName, v)}
-                style={[styles.chip, v.available <= 0 && styles.chipDisabled]}
-              >
-                <Text style={styles.chipText}>
-                  {v.label} ({v.available})
-                </Text>
-              </Pressable>
+                label={`${v.label} (${v.available})`}
+              />
             ))}
           </View>
-          <Pressable style={styles.smallButton} onPress={() => setPicker({ kind: 'closed' })}>
-            <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-          </Pressable>
+          <Button label={t('common.cancel')} variant="secondary" size="sm" onPress={() => setPicker({ kind: 'closed' })} style={styles.spacedTop} />
+        </Card>
+      )}
+
+      <SectionHeader icon="cart" title={t('sale.cart')} />
+      {cart.length === 0 ? (
+        <EmptyState icon="cart-outline" message={t('sale.cartEmpty')} compact />
+      ) : (
+        <View style={styles.cartCard}>
+          {cart.map((line, index) => (
+            <View key={line.key} style={[styles.cartLine, index === cart.length - 1 && styles.noBorder]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{line.pieceName}</Text>
+                <Text style={styles.pieceSubtitle}>
+                  {line.materialName} · {line.variantLabel}
+                </Text>
+                <View style={styles.qtyRow}>
+                  <Pressable style={styles.qtyButton} onPress={() => updateQty(line.variantId, line.qty - 1)}>
+                    <Ionicons name="remove" size={16} color={colors.ink} />
+                  </Pressable>
+                  <Text style={styles.qtyValue}>{line.qty}</Text>
+                  <Pressable
+                    style={styles.qtyButton}
+                    onPress={() => line.qty < line.available && updateQty(line.variantId, line.qty + 1)}
+                  >
+                    <Ionicons name="add" size={16} color={colors.ink} />
+                  </Pressable>
+                  <TextInput
+                    style={styles.priceInput}
+                    value={String(centimesToMad(line.unitPriceCentimes))}
+                    onChangeText={(text) => updatePrice(line.variantId, text)}
+                    keyboardType="decimal-pad"
+                  />
+                  <Pressable onPress={() => removeLine(line.variantId)} style={styles.removeButton}>
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          ))}
         </View>
       )}
 
-      <Text style={styles.label}>{t('sale.cart')}</Text>
-      {cart.length === 0 && <Text style={styles.emptyText}>{t('sale.cartEmpty')}</Text>}
-      {cart.map((line) => (
-        <View key={line.key} style={styles.cartLine}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.rowTitle}>{line.pieceName}</Text>
-            <Text style={styles.pieceSubtitle}>
-              {line.materialName} · {line.variantLabel}
-            </Text>
-            <View style={styles.qtyRow}>
-              <Pressable style={styles.qtyButton} onPress={() => updateQty(line.variantId, line.qty - 1)}>
-                <Text style={styles.qtyButtonText}>−</Text>
-              </Pressable>
-              <Text style={styles.qtyValue}>{line.qty}</Text>
-              <Pressable
-                style={styles.qtyButton}
-                onPress={() => line.qty < line.available && updateQty(line.variantId, line.qty + 1)}
-              >
-                <Text style={styles.qtyButtonText}>+</Text>
-              </Pressable>
-              <TextInput
-                style={styles.priceInput}
-                value={String(centimesToMad(line.unitPriceCentimes))}
-                onChangeText={(text) => updatePrice(line.variantId, text)}
-                keyboardType="decimal-pad"
-              />
-              <Pressable onPress={() => removeLine(line.variantId)}>
-                <Text style={styles.removeText}>{t('common.delete')}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      ))}
-
-      <Text style={styles.label}>{t('sale.channel')}</Text>
+      <SectionHeader icon="storefront" title={t('sale.channel')} />
       <View style={styles.chipWrap}>
         {CHANNELS.map((c) => (
-          <Pressable key={c} onPress={() => setChannel(c)} style={[styles.chip, channel === c && styles.chipActive]}>
-            <Text style={[styles.chipText, channel === c && styles.chipTextActive]}>{t(`sale.channel_${c}`)}</Text>
-          </Pressable>
+          <Chip key={c} label={t(`sale.channel_${c}`)} active={channel === c} onPress={() => setChannel(c)} icon={SALE_CHANNEL_ICONS[c]} />
         ))}
       </View>
 
@@ -362,6 +369,7 @@ export function LogSaleScreen({ navigation }: Props) {
           setCustomerQuery(text);
         }}
         placeholder={t('sale.customerPlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
       {customerSuggestions.length > 0 && (
         <View style={styles.suggestionBox}>
@@ -383,12 +391,12 @@ export function LogSaleScreen({ navigation }: Props) {
 
       <View style={styles.toggleFullRow}>
         <Text style={styles.label}>{t('sale.layawayToggle')}</Text>
-        <Pressable
-          style={[styles.toggleSwitch, isLayaway && styles.toggleSwitchActive]}
-          onPress={() => setIsLayaway((v) => !v)}
-        >
-          <Text style={styles.toggleSwitchText}>{isLayaway ? t('common.yes') : t('common.no')}</Text>
-        </Pressable>
+        <Switch
+          value={isLayaway}
+          onValueChange={setIsLayaway}
+          trackColor={{ false: colors.border, true: colors.gold }}
+          thumbColor={colors.surface}
+        />
       </View>
 
       {isLayaway ? (
@@ -396,31 +404,36 @@ export function LogSaleScreen({ navigation }: Props) {
           <Text style={styles.label}>{t('sale.depositMad')}</Text>
           <TextInput style={styles.input} value={depositMad} onChangeText={setDepositMad} keyboardType="decimal-pad" />
           <Text style={styles.label}>{t('sale.dueOn')}</Text>
-          <TextInput style={styles.input} value={dueOn} onChangeText={setDueOn} placeholder="YYYY-MM-DD" />
+          <TextInput style={styles.input} value={dueOn} onChangeText={setDueOn} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inkMuted} />
         </>
       ) : null}
 
       <Text style={styles.label}>{isLayaway ? t('sale.depositMethod') : t('sale.method')}</Text>
       <View style={styles.chipWrap}>
         {METHODS.map((m) => (
-          <Pressable key={m} onPress={() => setMethod(m)} style={[styles.chip, method === m && styles.chipActive]}>
-            <Text style={[styles.chipText, method === m && styles.chipTextActive]}>{t(`sale.method_${m}`)}</Text>
-          </Pressable>
+          <Chip key={m} label={t(`sale.method_${m}`)} active={method === m} onPress={() => setMethod(m)} icon={PAYMENT_METHOD_ICONS[m]} />
         ))}
       </View>
 
       <Text style={styles.label}>{t('piece.notes')}</Text>
-      <TextInput style={[styles.input, styles.notesInput]} value={note} onChangeText={setNote} multiline />
+      <TextInput style={[styles.input, styles.notesInput]} value={note} onChangeText={setNote} multiline placeholderTextColor={colors.inkMuted} />
 
-      <View style={styles.totalsBox}>
-        <Text style={styles.totalsLine}>{t('sale.subtotal')}: {formatMad(subtotalCentimes)}</Text>
-        <Text style={styles.totalsLine}>{t('sale.discount')}: {formatMad(discountCentimes)}</Text>
-        <Text style={styles.totalsTotal}>{t('sale.total')}: {formatMad(totalCentimes)}</Text>
-      </View>
+      <Card style={styles.totalsBox}>
+        <View style={styles.totalsLineRow}>
+          <Text style={styles.totalsLine}>{t('sale.subtotal')}</Text>
+          <Text style={styles.totalsLine}>{formatMad(subtotalCentimes)}</Text>
+        </View>
+        <View style={styles.totalsLineRow}>
+          <Text style={styles.totalsLine}>{t('sale.discount')}</Text>
+          <Text style={styles.totalsLine}>{formatMad(discountCentimes)}</Text>
+        </View>
+        <View style={[styles.totalsLineRow, styles.totalsDivider]}>
+          <Text style={styles.totalsTotalLabel}>{t('sale.total')}</Text>
+          <Text style={styles.totalsTotal}>{formatMad(totalCentimes)}</Text>
+        </View>
+      </Card>
 
-      <Pressable style={styles.saveButton} onPress={handleCompleteSale} disabled={saving}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('sale.completeSale')}</Text>}
-      </Pressable>
+      <Button label={t('sale.completeSale')} icon="checkmark-circle" variant="primary" fullWidth loading={saving} onPress={handleCompleteSale} style={styles.spacedTopLg} />
     </ScrollView>
   );
 }
@@ -433,18 +446,19 @@ function ScanPanel({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [permission, requestPermission] = useCameraPermissions();
 
   return (
     <View style={styles.scanArea}>
       {!permission ? (
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.ink} style={styles.spacedTop} />
       ) : !permission.granted ? (
         <View style={styles.permissionBox}>
+          <Ionicons name="camera-outline" size={32} color={colors.inkMuted} />
           <Text style={styles.permissionText}>{t('stockIntake.cameraPermission')}</Text>
-          <Pressable style={styles.smallButton} onPress={() => requestPermission()}>
-            <Text style={styles.smallButtonText}>{t('stockIntake.grantPermission')}</Text>
-          </Pressable>
+          <Button label={t('stockIntake.grantPermission')} icon="camera" onPress={() => requestPermission()} />
         </View>
       ) : (
         <View style={styles.camera}>
@@ -460,9 +474,7 @@ function ScanPanel({
           </View>
         </View>
       )}
-      <Pressable style={styles.smallButton} onPress={onCancel}>
-        <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-      </Pressable>
+      <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.spacedTop} />
     </View>
   );
 }
@@ -475,6 +487,8 @@ function SearchPanel({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PieceSearchResult[]>([]);
 
@@ -488,64 +502,54 @@ function SearchPanel({
   }, [query]);
 
   return (
-    <View style={styles.panel}>
-      <TextInput style={styles.input} value={query} onChangeText={setQuery} placeholder={t('sale.searchPlaceholder')} autoFocus />
-      <ScrollView style={{ maxHeight: 240, marginTop: 8 }}>
+    <Card style={styles.spacedTop}>
+      <TextInput style={styles.input} value={query} onChangeText={setQuery} placeholder={t('sale.searchPlaceholder')} placeholderTextColor={colors.inkMuted} autoFocus />
+      <ScrollView style={{ maxHeight: 240, marginTop: spacing.sm }}>
         {results.map((r) => (
           <Pressable key={r.id} style={styles.searchRow} onPress={() => onSelect(r)}>
             <Text style={styles.rowTitle}>{r.name}</Text>
-            <Text style={styles.pieceSubtitle}>{r.materialName} · {r.category}</Text>
+            <Text style={styles.pieceSubtitle}>{getMaterialDisplayName(r.materialCode, r.materialName, t)} · {r.category}</Text>
           </Pressable>
         ))}
       </ScrollView>
-      <Pressable style={styles.smallButton} onPress={onCancel}>
-        <Text style={styles.smallButtonText}>{t('common.cancel')}</Text>
-      </Pressable>
-    </View>
+      <Button label={t('common.cancel')} variant="secondary" size="sm" onPress={onCancel} style={styles.spacedTop} />
+    </Card>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 4, backgroundColor: '#fff' },
-  addRow: { flexDirection: 'row', gap: 12 },
-  panel: { borderWidth: 1, borderColor: '#eee', borderRadius: 10, padding: 12, marginTop: 12, gap: 8 },
-  scanArea: { height: 320, marginTop: 12, gap: 8 },
-  camera: { flex: 1, borderRadius: 12, overflow: 'hidden' },
+const makeStyles = (colors: Colors) => StyleSheet.create({
+  container: { padding: spacing.lg, paddingBottom: 60 },
+  addRow: { flexDirection: 'row', gap: spacing.md },
+  spacedTop: { marginTop: spacing.sm },
+  spacedTopLg: { marginTop: spacing.lg, marginBottom: 40 },
+  scanArea: { height: 340, marginTop: spacing.md, gap: spacing.sm },
+  camera: { flex: 1, borderRadius: radius.lg, overflow: 'hidden' },
   scanOverlay: { alignItems: 'center', justifyContent: 'center' },
-  scanFrame: { width: 200, height: 200, borderWidth: 3, borderColor: 'rgba(255,255,255,0.85)', borderRadius: 16 },
+  scanFrame: { width: 200, height: 200, borderWidth: 3, borderColor: 'rgba(255,255,255,0.85)', borderRadius: radius.lg },
   scanHint: { color: '#fff', marginTop: 16, fontSize: 13, backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  permissionBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  permissionText: { textAlign: 'center', color: '#555', paddingHorizontal: 24 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 6, color: '#333' },
-  emptyText: { color: '#888', marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+  permissionBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  permissionText: { textAlign: 'center', color: colors.inkSoft, paddingHorizontal: 24 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: spacing.lg, marginBottom: spacing.sm, color: colors.ink },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 15, color: colors.ink, backgroundColor: colors.surface },
   notesInput: { minHeight: 70, textAlignVertical: 'top' },
-  cartLine: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
-  rowTitle: { fontSize: 15, fontWeight: '600' },
-  pieceSubtitle: { color: '#666', fontSize: 13 },
-  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  qtyButton: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#f0f0f0', alignItems: 'center', justifyContent: 'center' },
-  qtyButtonText: { fontSize: 18, fontWeight: '700' },
-  qtyValue: { minWidth: 20, textAlign: 'center', fontWeight: '600' },
-  priceInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, width: 80, marginStart: 8 },
-  removeText: { color: '#b00020', marginStart: 8 },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: '#f0f0f0' },
-  chipActive: { backgroundColor: '#1a1a1a' },
-  chipDisabled: { opacity: 0.4 },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
-  suggestionBox: { borderWidth: 1, borderColor: '#eee', borderRadius: 8, marginTop: 4, paddingHorizontal: 10 },
-  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
-  toggleFullRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  toggleSwitch: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16, backgroundColor: '#f0f0f0' },
-  toggleSwitchActive: { backgroundColor: '#1a1a1a' },
-  toggleSwitchText: { fontWeight: '600', color: '#333' },
-  smallButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#f0f0f0', borderRadius: 8, alignSelf: 'flex-start' },
-  smallButtonText: { fontWeight: '600' },
-  totalsBox: { marginTop: 20, gap: 4 },
-  totalsLine: { color: '#555' },
-  totalsTotal: { fontSize: 18, fontWeight: '700', marginTop: 4 },
-  saveButton: { backgroundColor: '#1a1a1a', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 16, marginBottom: 40 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  cartCard: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md },
+  cartLine: { flexDirection: 'row', paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  noBorder: { borderBottomWidth: 0 },
+  rowTitle: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  pieceSubtitle: { color: colors.inkSoft, fontSize: 13 },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  qtyButton: { width: 30, height: 30, borderRadius: radius.pill, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  qtyValue: { minWidth: 20, textAlign: 'center', fontWeight: '600', color: colors.ink },
+  priceInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 6, width: 80, marginStart: spacing.sm, color: colors.ink },
+  removeButton: { marginStart: spacing.sm, padding: spacing.xs },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  suggestionBox: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, marginTop: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: colors.surface },
+  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  toggleFullRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm },
+  totalsBox: { marginTop: spacing.xl, gap: spacing.xs },
+  totalsLineRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  totalsLine: { color: colors.inkSoft, fontSize: 14 },
+  totalsDivider: { paddingTop: spacing.sm, marginTop: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  totalsTotalLabel: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  totalsTotal: { fontSize: 20, fontWeight: '700', color: colors.gold },
 });

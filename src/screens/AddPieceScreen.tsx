@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   StyleSheet,
   Alert,
   Image,
-  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { listActiveMaterials } from '../db/repositories/materials';
@@ -23,6 +23,15 @@ import { gramsToMg } from '../utils/weight';
 import { RING_SIZE_PRESETS } from '../catalogue/ringSizes';
 import type { Material } from '../db/schema/materials';
 import type { ItemType, VariantType } from '../db/schema/pieces';
+import { getMaterialDisplayName } from '../i18n/materialName';
+import { SectionHeader } from '../components/SectionHeader';
+import { Chip } from '../components/Chip';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { SegmentedControl } from '../components/SegmentedControl';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import type { Colors } from '../theme/palettes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddPiece'>;
 
@@ -53,6 +62,8 @@ const VARIANT_TYPES: VariantType[] = ['none', 'ring_size', 'length'];
 
 export function AddPieceScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [materialId, setMaterialId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -173,13 +184,14 @@ export function AddPieceScreen({ navigation }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <Text style={styles.label}>{t('piece.name')}</Text>
       <TextInput
         style={styles.input}
         value={name}
         onChangeText={setName}
         placeholder={t('piece.namePlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
 
       <Text style={styles.label}>{t('piece.category')}</Text>
@@ -188,73 +200,56 @@ export function AddPieceScreen({ navigation }: Props) {
         value={category}
         onChangeText={setCategory}
         placeholder={t('piece.categoryPlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
 
       <Text style={styles.label}>{t('piece.material')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroller}>
-        {materials.map((m) => (
-          <Pressable
-            key={m.id}
-            onPress={() => setMaterialId(m.id)}
-            style={[styles.chip, materialId === m.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, materialId === m.id && styles.chipTextActive]}>{m.name}</Text>
-          </Pressable>
-        ))}
+        <View style={styles.chipScrollerRow}>
+          {materials.map((m) => (
+            <Chip
+              key={m.id}
+              label={getMaterialDisplayName(m.code, m.name, t)}
+              active={materialId === m.id}
+              onPress={() => setMaterialId(m.id)}
+            />
+          ))}
+        </View>
       </ScrollView>
 
       <Text style={styles.label}>{t('piece.itemType')}</Text>
-      <View style={styles.toggleRow}>
-        {ITEM_TYPES.map((type) => (
-          <Pressable
-            key={type}
-            onPress={() => setItemType(type)}
-            style={[styles.toggle, itemType === type && styles.toggleActive]}
-          >
-            <Text style={[styles.toggleText, itemType === type && styles.toggleTextActive]}>
-              {t(`piece.itemType${type === 'model' ? 'Model' : 'Unique'}`)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <SegmentedControl
+        value={itemType}
+        onChange={setItemType}
+        options={ITEM_TYPES.map((type) => ({
+          value: type,
+          label: t(`piece.itemType${type === 'model' ? 'Model' : 'Unique'}`),
+          icon: type === 'model' ? 'copy-outline' : 'sparkles-outline',
+        }))}
+      />
 
       <Text style={styles.label}>{t('piece.variantType')}</Text>
-      <View style={styles.toggleRow}>
-        {VARIANT_TYPES.map((type) => (
-          <Pressable
-            key={type}
-            onPress={() => setVariantType(type)}
-            style={[styles.toggle, variantType === type && styles.toggleActive]}
-          >
-            <Text style={[styles.toggleText, variantType === type && styles.toggleTextActive]}>
-              {t(
-                `piece.variantType${
-                  type === 'none' ? 'None' : type === 'ring_size' ? 'RingSize' : 'Length'
-                }`,
-              )}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <SegmentedControl
+        value={variantType}
+        onChange={setVariantType}
+        options={VARIANT_TYPES.map((type) => ({
+          value: type,
+          label: t(`piece.variantType${type === 'none' ? 'None' : type === 'ring_size' ? 'RingSize' : 'Length'}`),
+        }))}
+      />
 
-      <Text style={styles.label}>{t('piece.variants')}</Text>
+      <SectionHeader icon="layers" title={t('piece.variants')} />
       {variantDrafts.map((draft) => (
-        <View key={draft.key} style={styles.variantCard}>
+        <Card key={draft.key} style={styles.variantCard}>
           {variantType !== 'none' && (
             <>
               {variantType === 'ring_size' && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroller}>
-                  {RING_SIZE_PRESETS.map((size) => (
-                    <Pressable
-                      key={size}
-                      onPress={() => updateVariantDraft(draft.key, { label: size })}
-                      style={[styles.chip, draft.label === size && styles.chipActive]}
-                    >
-                      <Text style={[styles.chipText, draft.label === size && styles.chipTextActive]}>
-                        {size}
-                      </Text>
-                    </Pressable>
-                  ))}
+                  <View style={styles.chipScrollerRow}>
+                    {RING_SIZE_PRESETS.map((size) => (
+                      <Chip key={size} label={size} active={draft.label === size} onPress={() => updateVariantDraft(draft.key, { label: size })} />
+                    ))}
+                  </View>
                 </ScrollView>
               )}
               <TextInput
@@ -262,6 +257,7 @@ export function AddPieceScreen({ navigation }: Props) {
                 value={draft.label}
                 onChangeText={(text) => updateVariantDraft(draft.key, { label: text })}
                 placeholder={t('piece.variantLabel')}
+                placeholderTextColor={colors.inkMuted}
               />
             </>
           )}
@@ -274,6 +270,7 @@ export function AddPieceScreen({ navigation }: Props) {
                 onChangeText={(text) => updateVariantDraft(draft.key, { weightGrams: text })}
                 keyboardType="decimal-pad"
                 placeholder="0"
+                placeholderTextColor={colors.inkMuted}
               />
             </View>
             <View style={styles.variantField}>
@@ -284,6 +281,7 @@ export function AddPieceScreen({ navigation }: Props) {
                 onChangeText={(text) => updateVariantDraft(draft.key, { costMad: text })}
                 keyboardType="decimal-pad"
                 placeholder="0"
+                placeholderTextColor={colors.inkMuted}
               />
             </View>
             <View style={styles.variantField}>
@@ -294,108 +292,65 @@ export function AddPieceScreen({ navigation }: Props) {
                 onChangeText={(text) => updateVariantDraft(draft.key, { priceMad: text })}
                 keyboardType="decimal-pad"
                 placeholder="0"
+                placeholderTextColor={colors.inkMuted}
               />
             </View>
           </View>
           {allowMultipleVariants && variantDrafts.length > 1 && (
-            <Pressable onPress={() => removeVariantRow(draft.key)} style={styles.removeVariantButton}>
-              <Text style={styles.removeVariantText}>{t('piece.removeVariant')}</Text>
-            </Pressable>
+            <Button label={t('piece.removeVariant')} tone="danger" variant="text" icon="trash-outline" size="sm" onPress={() => removeVariantRow(draft.key)} style={styles.removeVariantButton} />
           )}
-        </View>
+        </Card>
       ))}
       {allowMultipleVariants && (
-        <Pressable style={styles.smallButton} onPress={addVariantRow}>
-          <Text style={styles.smallButtonText}>{t('piece.addVariant')}</Text>
-        </Pressable>
+        <Button label={t('piece.addVariant')} icon="add" size="sm" onPress={addVariantRow} style={styles.spacedTop} />
       )}
 
-      <Text style={styles.label}>{t('piece.photos')}</Text>
+      <SectionHeader icon="images" title={t('piece.photos')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroller}>
-        {photoUris.map((uri, index) => (
-          <Pressable key={uri} onLongPress={() => removePhotoAt(index)}>
-            <Image source={{ uri }} style={styles.photo} />
-          </Pressable>
-        ))}
+        <View style={styles.chipScrollerRow}>
+          {photoUris.map((uri, index) => (
+            <Pressable key={uri} onLongPress={() => removePhotoAt(index)}>
+              <Image source={{ uri }} style={styles.photo} />
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
       <View style={styles.photoButtons}>
-        <Pressable style={styles.smallButton} onPress={() => handlePickPhoto('camera')}>
-          <Text style={styles.smallButtonText}>{t('common.camera')}</Text>
-        </Pressable>
-        <Pressable style={styles.smallButton} onPress={() => handlePickPhoto('library')}>
-          <Text style={styles.smallButtonText}>{t('common.gallery')}</Text>
-        </Pressable>
+        <Button label={t('common.camera')} icon="camera-outline" size="sm" onPress={() => handlePickPhoto('camera')} />
+        <Button label={t('common.gallery')} icon="images-outline" size="sm" onPress={() => handlePickPhoto('library')} />
       </View>
 
       <Text style={styles.label}>{t('piece.notes')}</Text>
-      <TextInput style={[styles.input, styles.notesInput]} value={notes} onChangeText={setNotes} multiline />
+      <TextInput style={[styles.input, styles.notesInput]} value={notes} onChangeText={setNotes} multiline placeholderTextColor={colors.inkMuted} />
 
-      <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('common.save')}</Text>}
-      </Pressable>
+      <Button label={t('common.save')} icon="checkmark-circle" variant="primary" fullWidth loading={saving} onPress={handleSave} style={styles.saveButton} />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 4, backgroundColor: '#fff' },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 6, color: '#333' },
-  smallLabel: { fontSize: 12, color: '#666', marginBottom: 4 },
+const makeStyles = (colors: Colors) => StyleSheet.create({
+  container: { padding: spacing.lg, paddingBottom: 60 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: spacing.lg, marginBottom: spacing.sm, color: colors.ink },
+  smallLabel: { fontSize: 12, color: colors.inkSoft, marginBottom: spacing.xs },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: 15,
+    color: colors.ink,
+    backgroundColor: colors.surface,
   },
   notesInput: { minHeight: 80, textAlignVertical: 'top' },
-  chipScroller: { marginBottom: 4 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    marginEnd: 8,
-  },
-  chipActive: { backgroundColor: '#1a1a1a' },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
-  toggleRow: { flexDirection: 'row', gap: 8 },
-  toggle: { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#f0f0f0', alignItems: 'center' },
-  toggleActive: { backgroundColor: '#1a1a1a' },
-  toggleText: { color: '#333', fontWeight: '600' },
-  toggleTextActive: { color: '#fff' },
-  variantCard: {
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 8,
-    gap: 8,
-  },
-  variantFieldsRow: { flexDirection: 'row', gap: 8 },
+  chipScroller: { marginBottom: spacing.xs },
+  chipScrollerRow: { flexDirection: 'row', gap: spacing.sm },
+  variantCard: { marginTop: spacing.sm, gap: spacing.sm },
+  variantFieldsRow: { flexDirection: 'row', gap: spacing.sm },
   variantField: { flex: 1 },
   removeVariantButton: { alignSelf: 'flex-end' },
-  removeVariantText: { color: '#b00020', fontSize: 13 },
-  smallButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
-  smallButtonText: { fontWeight: '600' },
-  photoButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  photo: { width: 80, height: 80, borderRadius: 8, marginEnd: 8, backgroundColor: '#eee' },
-  saveButton: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 40,
-  },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  spacedTop: { marginTop: spacing.sm },
+  photoButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  photo: { width: 80, height: 80, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
+  saveButton: { marginTop: spacing.xl, marginBottom: 40 },
 });

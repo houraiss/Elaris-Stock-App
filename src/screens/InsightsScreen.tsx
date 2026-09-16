@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -26,14 +26,30 @@ import {
 import type { SocialPlatform } from '../db/schema/social';
 import { BarChart } from '../charts/BarChart';
 import { formatMad } from '../utils/money';
+import { getMaterialDisplayName } from '../i18n/materialName';
+import { SectionHeader } from '../components/SectionHeader';
+import { Chip } from '../components/Chip';
+import { EmptyState } from '../components/EmptyState';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import type { Colors } from '../theme/palettes';
+import { SOCIAL_PLATFORM_ICONS } from '../theme/icons';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Insights'>;
 
 const DIMENSIONS: SalesBreakdownDimension[] = ['material', 'category', 'channel'];
 const SOCIAL_PLATFORMS: SocialPlatform[] = ['instagram', 'tiktok'];
 
+function formatBandWeightRange(minWeightMg: number, maxWeightMg: number): string {
+  const min = Math.round(minWeightMg / 1000);
+  const max = maxWeightMg >= Number.MAX_SAFE_INTEGER / 2 ? '∞' : Math.round(maxWeightMg / 1000);
+  return `${min}–${max} g`;
+}
+
 export function InsightsScreen(_props: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [revenue, setRevenue] = useState<MonthlyRevenue[]>([]);
   const [markupComparison, setMarkupComparison] = useState<MarkupComparison[]>([]);
   const [breakdownDimension, setBreakdownDimension] = useState<SalesBreakdownDimension>('material');
@@ -90,145 +106,161 @@ export function InsightsScreen(_props: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.sectionTitle}>{t('insights.revenueOverTime')}</Text>
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container}>
+      <SectionHeader icon="trending-up" title={t('insights.revenueOverTime')} style={styles.firstSection} />
       <BarChart
         data={revenue.map((r) => ({ label: r.month, value: r.bookedCentimes, secondaryValue: r.cashCentimes }))}
         valueFormatter={formatMad}
         legend={{ primary: t('insights.booked'), secondary: t('insights.cashCollected') }}
+        barColor={colors.primary}
+        secondaryColor={colors.gold}
       />
 
-      <Text style={styles.sectionTitle}>{t('insights.realisedMarkup')}</Text>
+      <SectionHeader icon="analytics" title={t('insights.realisedMarkup')} />
       {markupComparison.length === 0 ? (
-        <Text style={styles.emptyText}>{t('insights.noSalesYet')}</Text>
+        <EmptyState icon="analytics-outline" message={t('insights.noSalesYet')} compact />
       ) : (
-        markupComparison.map((row) => (
-          <View key={row.label} style={styles.listRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.listRowLabel}>{row.label}</Text>
-              <Text style={styles.listRowSub}>{t('insights.itemsSold', { count: row.itemCount })}</Text>
+        <View style={styles.listCard}>
+          {markupComparison.map((row, index) => (
+            <View
+              key={`${row.materialCode ?? 'all'}-${row.minWeightMg}-${row.maxWeightMg}`}
+              style={[styles.listRow, index === markupComparison.length - 1 && styles.noBorder]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.listRowLabel}>
+                  {row.materialCode && row.materialName ? getMaterialDisplayName(row.materialCode, row.materialName, t) : t('settings.allMaterials')} ·{' '}
+                  {formatBandWeightRange(row.minWeightMg, row.maxWeightMg)}
+                </Text>
+                <Text style={styles.listRowSub}>{t('insights.itemsSold', { count: row.itemCount })}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.listRowValue}>
+                  {(row.realisedBps / 100).toFixed(1)}% {t('insights.actual')}
+                </Text>
+                <Text style={styles.listRowSub}>{(row.ruleBps / 100).toFixed(1)}% {t('insights.rule')}</Text>
+              </View>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.listRowValue}>
-                {(row.realisedBps / 100).toFixed(1)}% {t('insights.actual')}
-              </Text>
-              <Text style={styles.listRowSub}>{(row.ruleBps / 100).toFixed(1)}% {t('insights.rule')}</Text>
-            </View>
-          </View>
-        ))
+          ))}
+        </View>
       )}
 
-      <Text style={styles.sectionTitle}>{t('insights.salesBreakdown')}</Text>
+      <SectionHeader icon="pie-chart" title={t('insights.salesBreakdown')} />
       <View style={styles.chipRow}>
         {DIMENSIONS.map((d) => (
-          <Pressable key={d} style={[styles.chip, breakdownDimension === d && styles.chipActive]} onPress={() => handleDimensionChange(d)}>
-            <Text style={[styles.chipText, breakdownDimension === d && styles.chipTextActive]}>{t(`insights.dimension_${d}`)}</Text>
-          </Pressable>
+          <Chip key={d} label={t(`insights.dimension_${d}`)} active={breakdownDimension === d} onPress={() => handleDimensionChange(d)} />
         ))}
       </View>
-      <BarChart data={breakdown.slice(0, 6).map((b) => ({ label: b.label, value: b.totalCentimes }))} valueFormatter={formatMad} />
+      <BarChart
+        data={breakdown.slice(0, 6).map((b) => ({ label: b.code ? getMaterialDisplayName(b.code, b.label, t) : b.label, value: b.totalCentimes }))}
+        valueFormatter={formatMad}
+        barColor={colors.primary}
+      />
 
-      <Text style={styles.sectionTitle}>{t('insights.costTrends')}</Text>
+      <SectionHeader icon="stats-chart" title={t('insights.costTrends')} />
       {costTrends.length === 0 ? (
-        <Text style={styles.emptyText}>{t('insights.noPurchasesYet')}</Text>
+        <EmptyState icon="stats-chart-outline" message={t('insights.noPurchasesYet')} compact />
       ) : (
         costTrends.map((series) => (
-          <View key={series.materialName} style={{ marginBottom: 16 }}>
-            <Text style={styles.subLabel}>{series.materialName}</Text>
-            <BarChart data={series.points.map((p) => ({ label: p.month, value: p.avgCostPerGramCentimes }))} valueFormatter={formatMad} />
+          <View key={series.materialCode} style={styles.subSection}>
+            <Text style={styles.subLabel}>{getMaterialDisplayName(series.materialCode, series.materialName, t)}</Text>
+            <BarChart data={series.points.map((p) => ({ label: p.month, value: p.avgCostPerGramCentimes }))} valueFormatter={formatMad} barColor={colors.silver} />
           </View>
         ))
       )}
 
-      <Text style={styles.sectionTitle}>{t('insights.ringSizes')}</Text>
+      <SectionHeader icon="ellipse" title={t('insights.ringSizes')} />
       {ringSizes.length === 0 ? (
-        <Text style={styles.emptyText}>{t('insights.noSalesYet')}</Text>
+        <EmptyState icon="ellipse-outline" message={t('insights.noSalesYet')} compact />
       ) : (
-        <BarChart data={ringSizes.map((r) => ({ label: r.label, value: r.qtySold }))} valueFormatter={(v) => String(v)} />
+        <BarChart data={ringSizes.map((r) => ({ label: r.label, value: r.qtySold }))} valueFormatter={(v) => String(v)} barColor={colors.primary} />
       )}
 
-      <Text style={styles.sectionTitle}>{t('insights.deadStock')}</Text>
+      <SectionHeader icon="archive" title={t('insights.deadStock')} />
       {deadStock.length === 0 ? (
-        <Text style={styles.emptyText}>{t('insights.noDeadStock')}</Text>
+        <EmptyState icon="checkmark-circle-outline" message={t('insights.noDeadStock')} compact />
       ) : (
-        deadStock.map((row) => (
-          <View key={row.variantId} style={styles.listRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.listRowLabel}>
-                {row.pieceName} · {row.variantLabel}
-              </Text>
-              <Text style={styles.listRowSub}>
-                {row.daysSinceLastSale === null
-                  ? t('insights.neverSold')
-                  : t('insights.daysSinceSale', { count: row.daysSinceLastSale })}
-              </Text>
+        <View style={styles.listCard}>
+          {deadStock.map((row, index) => (
+            <View key={row.variantId} style={[styles.listRow, index === deadStock.length - 1 && styles.noBorder]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.listRowLabel}>
+                  {row.pieceName} · {row.variantLabel}
+                </Text>
+                <Text style={styles.listRowSub}>
+                  {row.daysSinceLastSale === null
+                    ? t('insights.neverSold')
+                    : t('insights.daysSinceSale', { count: row.daysSinceLastSale })}
+                </Text>
+              </View>
+              <Text style={styles.listRowValue}>{row.onHand}</Text>
             </View>
-            <Text style={styles.listRowValue}>{row.onHand}</Text>
-          </View>
-        ))
+          ))}
+        </View>
       )}
 
-      <Text style={styles.sectionTitle}>{t('insights.followerGrowth')}</Text>
+      <SectionHeader icon="share-social" title={t('insights.followerGrowth')} />
       <View style={styles.chipRow}>
         {SOCIAL_PLATFORMS.map((p) => (
-          <Pressable
-            key={p}
-            style={[styles.chip, socialPlatform === p && styles.chipActive]}
-            onPress={() => handleSocialPlatformChange(p)}
-          >
-            <Text style={[styles.chipText, socialPlatform === p && styles.chipTextActive]}>{t(`social.platform_${p}`)}</Text>
-          </Pressable>
+          <Chip key={p} label={t(`social.platform_${p}`)} active={socialPlatform === p} onPress={() => handleSocialPlatformChange(p)} icon={SOCIAL_PLATFORM_ICONS[p]} />
         ))}
       </View>
       {followerGrowth.every((p) => p.followers === null) ? (
-        <Text style={styles.emptyText}>{t('insights.noFollowerData')}</Text>
+        <EmptyState icon="people-outline" message={t('insights.noFollowerData')} compact />
       ) : (
         <>
           <Text style={styles.subLabel}>{t('insights.followers')}</Text>
-          <BarChart data={followerGrowth.map((p) => ({ label: p.month, value: p.followers ?? 0 }))} valueFormatter={(v) => String(v)} />
-          <Text style={[styles.subLabel, { marginTop: 12 }]}>{t('insights.bookedRevenue')}</Text>
-          <BarChart data={followerGrowth.map((p) => ({ label: p.month, value: p.bookedCentimes }))} valueFormatter={formatMad} />
+          <BarChart data={followerGrowth.map((p) => ({ label: p.month, value: p.followers ?? 0 }))} valueFormatter={(v) => String(v)} barColor={colors.info} />
+          <Text style={[styles.subLabel, styles.subLabelSpaced]}>{t('insights.bookedRevenue')}</Text>
+          <BarChart data={followerGrowth.map((p) => ({ label: p.month, value: p.bookedCentimes }))} valueFormatter={formatMad} barColor={colors.gold} />
         </>
       )}
 
-      <Text style={styles.sectionTitle}>{t('insights.postToSales')}</Text>
+      <SectionHeader icon="link" title={t('insights.postToSales')} />
       {postCorrelation.length === 0 ? (
-        <Text style={styles.emptyText}>{t('insights.noPostsYet')}</Text>
+        <EmptyState icon="link-outline" message={t('insights.noPostsYet')} compact />
       ) : (
-        postCorrelation.map((row) => (
-          <View key={row.postId} style={styles.listRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.listRowLabel}>{row.pieceNames.join(', ')}</Text>
-              <Text style={styles.listRowSub}>
-                {t(`social.platform_${row.platform}`)} · {row.postedAt.slice(0, 10)}
-              </Text>
+        <View style={[styles.listCard, styles.listCardBottom]}>
+          {postCorrelation.map((row, index) => (
+            <View key={row.postId} style={[styles.listRow, index === postCorrelation.length - 1 && styles.noBorder]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.listRowLabel}>{row.pieceNames.join(', ')}</Text>
+                <Text style={styles.listRowSub}>
+                  {t(`social.platform_${row.platform}`)} · {row.postedAt.slice(0, 10)}
+                </Text>
+              </View>
+              <Text style={styles.listRowValue}>{t('insights.unitsSoldAfter', { count: row.qtySoldAfter })}</Text>
             </View>
-            <Text style={styles.listRowValue}>{t('insights.unitsSoldAfter', { count: row.qtySoldAfter })}</Text>
-          </View>
-        ))
+          ))}
+        </View>
       )}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 60, backgroundColor: '#fff' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginTop: 24, marginBottom: 8 },
-  subLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 4 },
-  emptyText: { color: '#888' },
-  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: '#f0f0f0' },
-  chipActive: { backgroundColor: '#1a1a1a' },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
+const makeStyles = (colors: Colors) => StyleSheet.create({
+  container: { padding: spacing.lg, paddingBottom: 60 },
+  firstSection: { marginTop: 0 },
+  subSection: { marginBottom: spacing.lg },
+  subLabel: { fontSize: 13, fontWeight: '600', color: colors.inkSoft, marginBottom: spacing.xs },
+  subLabelSpaced: { marginTop: spacing.md },
+  chipRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm, flexWrap: 'wrap' },
+  listCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+  },
+  listCardBottom: { marginBottom: spacing.md },
   listRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
+    borderColor: colors.border,
   },
-  listRowLabel: { fontSize: 14, color: '#333' },
-  listRowSub: { fontSize: 12, color: '#888' },
-  listRowValue: { fontSize: 14, fontWeight: '600' },
+  noBorder: { borderBottomWidth: 0 },
+  listRowLabel: { fontSize: 14, color: colors.ink },
+  listRowSub: { fontSize: 12, color: colors.inkMuted },
+  listRowValue: { fontSize: 14, fontWeight: '700', color: colors.ink },
 });

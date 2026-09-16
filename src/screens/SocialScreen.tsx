@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,6 +8,16 @@ import { createSnapshot, listSnapshots, createPost, listPosts, type PostWithPiec
 import { searchPieces, type PieceSearchResult } from '../db/repositories/stockIntake';
 import { BarChart } from '../charts/BarChart';
 import type { SocialSnapshot, SocialPlatform } from '../db/schema/social';
+import { SectionHeader } from '../components/SectionHeader';
+import { Chip } from '../components/Chip';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { Badge } from '../components/Badge';
+import { EmptyState } from '../components/EmptyState';
+import { spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import type { Colors } from '../theme/palettes';
+import { SOCIAL_PLATFORM_ICONS } from '../theme/icons';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Social'>;
 
@@ -24,6 +34,8 @@ function toInt(value: string): number {
 
 export function SocialScreen(_props: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [platform, setPlatform] = useState<SocialPlatform>('instagram');
   const [snapshots, setSnapshots] = useState<SocialSnapshot[]>([]);
   const [posts, setPosts] = useState<PostWithPieces[]>([]);
@@ -62,22 +74,21 @@ export function SocialScreen(_props: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.container}>
       <View style={styles.chipWrap}>
         {PLATFORMS.map((p) => (
-          <Pressable key={p} style={[styles.chip, platform === p && styles.chipActive]} onPress={() => handlePlatformChange(p)}>
-            <Text style={[styles.chipText, platform === p && styles.chipTextActive]}>{t(`social.platform_${p}`)}</Text>
-          </Pressable>
+          <Chip key={p} label={t(`social.platform_${p}`)} active={platform === p} onPress={() => handlePlatformChange(p)} icon={SOCIAL_PLATFORM_ICONS[p]} />
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>{t('social.followerTrend')}</Text>
+      <SectionHeader icon="trending-up" title={t('social.followerTrend')} />
       {snapshots.length === 0 ? (
-        <Text style={styles.emptyText}>{t('social.noSnapshotsYet')}</Text>
+        <EmptyState icon="stats-chart-outline" message={t('social.noSnapshotsYet')} compact />
       ) : (
         <BarChart
           data={snapshots.map((s) => ({ label: s.capturedOn.slice(5, 10), value: s.followers }))}
           valueFormatter={(v) => String(v)}
+          barColor={colors.gold}
         />
       )}
 
@@ -91,22 +102,18 @@ export function SocialScreen(_props: Props) {
           onCancel={() => setShowSnapshotForm(false)}
         />
       ) : (
-        <Pressable style={styles.secondaryButtonSmall} onPress={() => setShowSnapshotForm(true)}>
-          <Text style={styles.secondaryButtonSmallText}>{t('social.addSnapshot')}</Text>
-        </Pressable>
+        <Button label={t('social.addSnapshot')} icon="add-circle-outline" fullWidth onPress={() => setShowSnapshotForm(true)} style={styles.spacedTop} />
       )}
 
       <View style={styles.postsHeaderRow}>
-        <Text style={styles.sectionTitle}>{t('social.posts')}</Text>
-        <Pressable style={styles.smallButton} onPress={() => setShowPostForm(true)}>
-          <Text style={styles.smallButtonText}>{t('social.addPost')}</Text>
-        </Pressable>
+        <SectionHeader icon="images" title={t('social.posts')} style={styles.noMargin} />
+        <Button label={t('social.addPost')} icon="add" size="sm" onPress={() => setShowPostForm(true)} />
       </View>
       {posts.length === 0 ? (
-        <Text style={styles.emptyText}>{t('social.noPostsYet')}</Text>
+        <EmptyState icon="images-outline" message={t('social.noPostsYet')} compact />
       ) : (
         posts.map((post) => (
-          <View key={post.id} style={styles.postCard}>
+          <Card key={post.id} style={styles.postCard}>
             <Text style={styles.postDate}>{post.postedAt.slice(0, 10)}</Text>
             {post.caption ? (
               <Text style={styles.postCaption} numberOfLines={2}>
@@ -119,13 +126,11 @@ export function SocialScreen(_props: Props) {
             {post.pieceNames.length > 0 && (
               <View style={styles.chipWrap}>
                 {post.pieceNames.map((name) => (
-                  <View key={name} style={styles.pieceTagChip}>
-                    <Text style={styles.pieceTagChipText}>{name}</Text>
-                  </View>
+                  <Badge key={name} label={name} tone="gold" icon="diamond-outline" />
                 ))}
               </View>
             )}
-          </View>
+          </Card>
         ))
       )}
     </ScrollView>
@@ -142,6 +147,8 @@ function NewSnapshotForm({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [capturedOn, setCapturedOn] = useState(todayIso());
   const [followers, setFollowers] = useState('');
   const [postsCount, setPostsCount] = useState('');
@@ -173,9 +180,9 @@ function NewSnapshotForm({
   }
 
   return (
-    <View style={styles.inlineForm}>
+    <Card style={styles.inlineForm}>
       <Text style={styles.label}>{t('social.capturedOn')}</Text>
-      <TextInput style={styles.input} value={capturedOn} onChangeText={setCapturedOn} placeholder="YYYY-MM-DD" />
+      <TextInput style={styles.input} value={capturedOn} onChangeText={setCapturedOn} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inkMuted} />
       <View style={styles.fieldsRow}>
         <View style={styles.field}>
           <Text style={styles.smallLabel}>{t('social.followers')}</Text>
@@ -197,14 +204,10 @@ function NewSnapshotForm({
         </View>
       </View>
       <View style={styles.actionRow}>
-        <Pressable style={styles.secondaryButton} onPress={onCancel} disabled={saving}>
-          <Text style={styles.secondaryButtonText}>{t('common.cancel')}</Text>
-        </Pressable>
-        <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('common.save')}</Text>}
-        </Pressable>
+        <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} disabled={saving} style={{ flex: 1 }} />
+        <Button label={t('common.save')} icon="checkmark" variant="primary" onPress={handleSave} loading={saving} style={{ flex: 1 }} />
       </View>
-    </View>
+    </Card>
   );
 }
 
@@ -218,6 +221,8 @@ function NewPostPanel({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [postedAt, setPostedAt] = useState(todayIso());
   const [caption, setCaption] = useState('');
   const [likes, setLikes] = useState('');
@@ -279,12 +284,12 @@ function NewPostPanel({
   }
 
   return (
-    <ScrollView style={styles.addPanel} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.addPanel} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
       <Text style={styles.label}>{t('social.postedOn')}</Text>
-      <TextInput style={styles.input} value={postedAt} onChangeText={setPostedAt} placeholder="YYYY-MM-DD" />
+      <TextInput style={styles.input} value={postedAt} onChangeText={setPostedAt} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inkMuted} />
 
       <Text style={styles.label}>{t('social.caption')}</Text>
-      <TextInput style={[styles.input, styles.notesInput]} value={caption} onChangeText={setCaption} multiline />
+      <TextInput style={[styles.input, styles.notesInput]} value={caption} onChangeText={setCaption} multiline placeholderTextColor={colors.inkMuted} />
 
       <View style={styles.fieldsRow}>
         <View style={styles.field}>
@@ -313,9 +318,7 @@ function NewPostPanel({
       {taggedPieces.length > 0 && (
         <View style={styles.chipWrap}>
           {taggedPieces.map((p) => (
-            <Pressable key={p.id} style={styles.pieceTagChipRemovable} onPress={() => removeTag(p.id)}>
-              <Text style={styles.pieceTagChipText}>{p.name} ×</Text>
-            </Pressable>
+            <Chip key={p.id} label={p.name} active onPress={() => removeTag(p.id)} icon="close-circle" />
           ))}
         </View>
       )}
@@ -324,6 +327,7 @@ function NewPostPanel({
         value={pieceQuery}
         onChangeText={setPieceQuery}
         placeholder={t('social.taggedPiecesPlaceholder')}
+        placeholderTextColor={colors.inkMuted}
       />
       {pieceSuggestions.length > 0 && (
         <View style={styles.suggestionBox}>
@@ -335,53 +339,35 @@ function NewPostPanel({
         </View>
       )}
 
-      <View style={styles.actionRow}>
-        <Pressable style={styles.secondaryButton} onPress={onCancel} disabled={saving}>
-          <Text style={styles.secondaryButtonText}>{t('common.cancel')}</Text>
-        </Pressable>
-        <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('common.save')}</Text>}
-        </Pressable>
+      <View style={styles.finalActionRow}>
+        <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} disabled={saving} style={{ flex: 1 }} />
+        <Button label={t('common.save')} icon="checkmark" variant="primary" onPress={handleSave} loading={saving} style={{ flex: 2 }} />
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 60, backgroundColor: '#fff' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginTop: 24, marginBottom: 8 },
-  emptyText: { color: '#888' },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: '#f0f0f0' },
-  chipActive: { backgroundColor: '#1a1a1a' },
-  chipText: { color: '#333' },
-  chipTextActive: { color: '#fff' },
-  secondaryButtonSmall: { marginTop: 12, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: '#f0f0f0' },
-  secondaryButtonSmallText: { fontWeight: '600', color: '#333' },
-  postsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 },
-  smallButton: { paddingVertical: 8, paddingHorizontal: 14, backgroundColor: '#f0f0f0', borderRadius: 8 },
-  smallButtonText: { fontWeight: '600' },
-  postCard: { borderWidth: 1, borderColor: '#eee', borderRadius: 10, padding: 12, marginBottom: 12, gap: 4 },
-  postDate: { fontSize: 13, color: '#888' },
-  postCaption: { fontSize: 14, color: '#333' },
-  postStats: { fontSize: 12, color: '#666' },
-  pieceTagChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: '#f0f0f0' },
-  pieceTagChipRemovable: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: '#e5e5e5' },
-  pieceTagChipText: { fontSize: 12, color: '#333' },
-  inlineForm: { gap: 8, marginTop: 8, padding: 12, borderWidth: 1, borderColor: '#eee', borderRadius: 10 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 14, marginBottom: 6, color: '#333' },
-  smallLabel: { fontSize: 12, color: '#666' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+const makeStyles = (colors: Colors) => StyleSheet.create({
+  container: { padding: spacing.lg, paddingBottom: 60 },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  spacedTop: { marginTop: spacing.md },
+  postsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xxl },
+  noMargin: { marginTop: 0, marginBottom: 0 },
+  postCard: { marginTop: spacing.md, gap: spacing.xs },
+  postDate: { fontSize: 13, color: colors.inkMuted },
+  postCaption: { fontSize: 14, color: colors.ink },
+  postStats: { fontSize: 12, color: colors.inkSoft },
+  inlineForm: { gap: spacing.sm, marginTop: spacing.md },
+  label: { fontSize: 14, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.sm, color: colors.ink },
+  smallLabel: { fontSize: 12, color: colors.inkSoft },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 15, color: colors.ink, backgroundColor: colors.surface },
   notesInput: { minHeight: 70, textAlignVertical: 'top' },
-  fieldsRow: { flexDirection: 'row', gap: 8 },
+  fieldsRow: { flexDirection: 'row', gap: spacing.sm },
   field: { flex: 1 },
-  suggestionBox: { borderWidth: 1, borderColor: '#eee', borderRadius: 8, marginTop: 4, paddingHorizontal: 10 },
-  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
-  rowTitle: { fontSize: 15, fontWeight: '600' },
-  actionRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  secondaryButton: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center', backgroundColor: '#f0f0f0' },
-  secondaryButtonText: { fontWeight: '600', color: '#333' },
-  saveButton: { flex: 2, backgroundColor: '#1a1a1a', borderRadius: 8, paddingVertical: 14, alignItems: 'center' },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  addPanel: { flex: 1, backgroundColor: '#fff' },
+  suggestionBox: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, marginTop: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: colors.surface },
+  searchRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  rowTitle: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  actionRow: { flexDirection: 'row', gap: spacing.md },
+  finalActionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
+  addPanel: { flex: 1, backgroundColor: colors.background },
 });

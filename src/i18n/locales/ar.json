@@ -6,6 +6,7 @@
     "loading": "جارٍ التحميل…",
     "errorGeneric": "حدث خطأ ما",
     "add": "إضافة",
+    "edit": "تعديل",
     "delete": "حذف",
     "camera": "الكاميرا",
     "gallery": "المعرض",
@@ -36,7 +37,26 @@
     "recentActivity": "النشاط الأخير",
     "noActivityYet": "لا يوجد شيء مسجل بعد",
     "activity_sale": "بيع",
-    "activity_purchase": "شراء"
+    "activity_purchase": "شراء",
+    "greetingMorning": "صباح الخير",
+    "greetingAfternoon": "طاب يومك",
+    "greetingEvening": "مساء الخير",
+    "greetingNight": "طابت ليلتك",
+    "quickActions": "إجراءات سريعة",
+    "overview": "نظرة عامة",
+    "silverSpotTitle": "سعر الفضة الفوري",
+    "perGram": "للغرام",
+    "silverUpdatedNow": "تم التحديث الآن",
+    "silverUpdatedMinutes_one": "تم التحديث منذ {{count}} دقيقة",
+    "silverUpdatedMinutes_other": "تم التحديث منذ {{count}} دقائق",
+    "silverUpdatedHours_one": "تم التحديث منذ {{count}} ساعة",
+    "silverUpdatedHours_other": "تم التحديث منذ {{count}} ساعات",
+    "silverUnavailable": "السعر غير متوفر — تحقق من اتصالك",
+    "silverDisclaimer": "سعر مرجعي فوري، محوّل إلى الدرهم. قد تختلف أسعار التجار الفعلية.",
+    "editLayout": "تعديل التخطيط",
+    "layoutEditHint": "أعد ترتيب أقسام لوحتك الرئيسية",
+    "resetLayout": "إعادة تعيين",
+    "doneEditingLayout": "تم"
   },
   "stock": {
     "title": "المخزون",
@@ -46,7 +66,12 @@
     "available": "متاح للبيع",
     "unique": "قطعة فريدة",
     "variants_one": "{{count}} نوع",
-    "variants_other": "{{count}} أنواع"
+    "variants_other": "{{count}} أنواع",
+    "searchPlaceholder": "البحث بالاسم",
+    "filterByMaterial": "المادة",
+    "filterByCategory": "الفئة",
+    "noMatches": "لا توجد قطع مطابقة لبحثك أو عوامل التصفية",
+    "clearFilters": "إعادة تعيين عوامل التصفية"
   },
   "piece": {
     "addTitle": "إضافة قطعة",
@@ -76,6 +101,13 @@
     "notes": "ملاحظات",
     "validationError": "يرجى تعبئة الاسم والفئة ووزن وتكلفة كل نوع",
     "saveError": "تعذر حفظ هذه القطعة"
+  },
+  "material": {
+    "argent_925": "فضة 925",
+    "argent_rhodie_925": "روديوم",
+    "argent_800": "فضة 800",
+    "argent_800_chrome": "مطلي كروم",
+    "argent_800_dore": "مذهّب"
   },
   "pieceDetail": {
     "variants": "الأنواع",
@@ -207,6 +239,13 @@
     "language_en": "English",
     "language_fr": "Français",
     "language_ar": "العربية",
+    "appearance": "المظهر",
+    "appearanceLight": "فاتح",
+    "appearanceDark": "داكن",
+    "appearanceSystem": "النظام",
+    "visualStyle": "النمط",
+    "visualStyleStandard": "قياسي",
+    "visualStyleLiquidGlass": "Liquid Glass",
     "restartTitle": "إعادة التشغيل مطلوبة",
     "restartBody": "يتم تطبيق التخطيط من اليمين إلى اليسار بعد إعادة التشغيل فقط.",
     "restartNow": "إعادة التشغيل الآن",
@@ -239,7 +278,11 @@
     "restoreNow": "استعادة من السحابة",
     "restoreDoneTitle": "تمت الاستعادة",
     "restoreDoneBody": "عادت بياناتك، بما في ذلك {{photos}} صورة",
-    "restoreError": "فشلت الاستعادة"
+    "restoreError": "فشلت الاستعادة",
+    "aboutElaris": "عن Elaris",
+    "aboutTagline": "Jewelry • Store",
+    "followOnInstagram": "تابعنا على إنستغرام",
+    "instagramUnavailable": "تعذّر فتح إنستغرام"
   },
   "insights": {
     "title": "التحليلات",
