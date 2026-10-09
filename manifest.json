@@ -1,0 +1,19 @@
+{
+  "name": "Elaris — Preview",
+  "short_name": "Elaris",
+  "description": "A preview of Elaris, the stock and sales app for jewellers.",
+  "start_url": "/Elaris-Stock-App/",
+  "scope": "/Elaris-Stock-App/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A1020",
+  "theme_color": "#0A1020",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

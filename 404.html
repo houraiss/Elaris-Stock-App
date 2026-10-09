@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#0A1020">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Elaris — Preview</title>
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  <link rel="icon" href="/Elaris-Stock-App/favicon.ico"/>  <meta name="description" content="A preview of Elaris, the stock and sales app for jewellers. Runs in your browser; your data stays on your device." />
+    <meta name="theme-color" content="#0A1020" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Elaris" />
+    <meta name="robots" content="noindex" />
+    <link rel="manifest" href="/Elaris-Stock-App/manifest.json" />
+    <link rel="apple-touch-icon" href="/Elaris-Stock-App/icon.png" />
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  <script>
+(function () {
+  function boot() {
+    try { sessionStorage.removeItem('elaris-coi'); } catch (e) {}
+    // expo-sqlite's synchronous calls give up after ~1M Atomics.pause() spins,
+    // a few milliseconds, which a migration can exceed. Without pause() they
+    // fall back to a much longer busy-wait.
+    try { if (window.Atomics) Atomics.pause = undefined; } catch (e) {}
+    var s = document.createElement('script');
+    s.src = "/Elaris-Stock-App/_expo/static/js/web/index-43c5013be29fd0c5b3463bab71476145.js";
+    document.body.appendChild(s);
+  }
+  function fail() {
+    document.getElementById('root').innerHTML =
+      '<div style="margin:auto;max-width:360px;padding:24px;font:16px system-ui;color:#E8ECF4;text-align:center">' +
+      'This browser cannot run the Elaris preview (it may be a private window). ' +
+      'Please open it in a normal window of Chrome, Edge, Safari or Firefox.</div>';
+  }
+  if (window.crossOriginIsolated) return boot();
+  if (!('serviceWorker' in navigator) || !window.isSecureContext) return fail();
+  var tried = false;
+  try { tried = sessionStorage.getItem('elaris-coi') === '1'; } catch (e) {}
+  if (tried) return fail();
+  navigator.serviceWorker
+    .register("/Elaris-Stock-App/coi-sw.js", { scope: "/Elaris-Stock-App/" })
+    .then(function () { return navigator.serviceWorker.ready; })
+    .then(function () {
+      try { sessionStorage.setItem('elaris-coi', '1'); } catch (e) {}
+      location.reload();
+    }, fail);
+})();
+</script>
+</body>
+</html>
